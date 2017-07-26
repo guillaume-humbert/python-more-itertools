@@ -8,6 +8,8 @@ Build-Depends: debhelper (>= 10),
                python-all,
                python-setuptools,
                python-vcversioner,
+               python-nose,
+               python3-nose,
                python3-all,
                python3-setuptools,
                python3-vcversioner
