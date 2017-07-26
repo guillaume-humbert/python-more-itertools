@@ -6,12 +6,16 @@ Uploaders: Mycroft Devs <devops@mycroft.ai>
 Build-Depends: debhelper (>= 10),
                dh-python,
                python-all,
-               python-setuptools,
-               python-vcversioner,
                python-nose,
-               python3-nose,
+               python-setuptools,
+               python-six (<< 2.0.0),
+               python-six (>= 1.0.0),
+               python-vcversioner,
                python3-all,
+               python3-nose,
                python3-setuptools,
+               python3-six (<< 2.0.0),
+               python3-six (>= 1.0.0),
                python3-vcversioner
 Standards-Version: 4.0.0
 Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/more-itertools.git
