@@ -6,3 +6,6 @@
 more-itertools_3.2.0.orig.tar.gz
 7fb96c4f48643f28e83b5cf7fa2dd1f81cbbdbf7
 42528
+debianTag="debian/%e%v"
+patchedTag="patched/%e%v"
+upstreamTag="upstream/%e%u"
