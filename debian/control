@@ -30,7 +30,7 @@ XB-Python-Version: ${python:Versions}
 Description: More routines for operating on iterables, beyond itertools. (Python 2)
  Python's itertools library is a gem - you can compose elegant solutions
  for a variety of problems with the functions it provides.
- In more-itertools, we collect additional building blocks, recipes,
+ More-itertools collects additional building blocks, recipes,
  and routines for working with Python iterables.
  .
  This package contains the module for Python 2.
@@ -41,7 +41,7 @@ Depends: ${misc:Depends}, ${python3:Depends}
 Description: More routines for operating on iterables, beyond itertools. (Python 3)
  Python's itertools library is a gem - you can compose elegant solutions
  for a variety of problems with the functions it provides.
- In more-itertools, we collect additional building blocks, recipes,
+ More-itertools collects additional building blocks, recipes,
  and routines for working with Python iterables.
  .
  This package contains the module for Python 3.
