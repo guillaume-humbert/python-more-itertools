@@ -2,7 +2,7 @@ Source: more-itertools
 Section: python
 Priority: optional
 Maintainer: Debian Python Modules Team <python-modules-team@lists.alioth.debian.org>
-Uploaders: Mycroft Devs <devops@mycroft.ai>
+Uploaders: Ethan Ward <ethan.ward@mycroft.ai>
 Build-Depends: debhelper (>= 10),
                dh-python,
                python-all,
@@ -18,6 +18,8 @@ Build-Depends: debhelper (>= 10),
                python3-six (>= 1.0.0),
                python3-vcversioner
 Standards-Version: 4.0.0
+Homepage: https://pypi.python.org/pypi/more-itertools/
+Testsuite: autopkgtest
 Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/more-itertools.git
 Vcs-Browser: https://anonscm.debian.org/git/python-modules/packages/more-itertools.git
 
@@ -25,19 +27,21 @@ Package: python-more-itertools
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 XB-Python-Version: ${python:Versions}
-Description: More routines for operating on iterables, beyond itertools.
- This package contains the module for Python 2.x. Python's itertools
- library is a gem - you can compose elegant solutions for a variety of
- problems with the functions it provides. In more-itertools, we collect
- additional building blocks, recipes, and reoutines for working with
- Python iterables.
+Description: More routines for operating on iterables, beyond itertools. (Python 2)
+ Python's itertools library is a gem - you can compose elegant solutions
+ for a variety of problems with the functions it provides.
+ In more-itertools, we collect additional building blocks, recipes,
+ and routines for working with Python iterables.
+ .
+ This package contains the module for Python 2.
 
 Package: python3-more-itertools
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}
-Description: More routines for operating on iterables, beyond itertools.
- This package contains the module for Python 2.x. Python's itertools
- library is a gem - you can compose elegant solutions for a variety of
- problems with the functions it provides. In more-itertools, we collect
- additional building blocks, recipes, and reoutines for working with
- Python iterables.
+Description: More routines for operating on iterables, beyond itertools. (Python 3)
+ Python's itertools library is a gem - you can compose elegant solutions
+ for a variety of problems with the functions it provides.
+ In more-itertools, we collect additional building blocks, recipes,
+ and routines for working with Python iterables.
+ .
+ This package contains the module for Python 3.
