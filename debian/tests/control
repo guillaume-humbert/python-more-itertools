@@ -3,7 +3,7 @@ Test-Command: set -e
  ; for py in $(pyversions -r 2>/dev/null)
  ; do cd "$AUTOPKGTEST_TMP"
  ; echo "Testing with $py:"
- ; $py -m nose
+ ; $py -m nose 2>/dev/null
  ; done
 Depends: python-all,
          python-more-itertools,
@@ -14,7 +14,7 @@ Test-Command: set -e
  ; for py in $(py3versions -r 2>/dev/null)
  ; do cd "$AUTOPKGTEST_TMP"
  ; echo "Testing with $py:"
- ; $py -m nose
+ ; $py -m nose 2>/dev/null
  ; done
 Depends: python3-all,
          python3-more-itertools,
