@@ -1,5 +1,6 @@
-more-itertools (3.2.0-1) UNRELEASED; urgency=medium
+more-itertools (3.2.0-1) unstable; urgency=medium
 
+  [ Ethan Ward ]
   * Initial Debian packaging (closes: #869213)
 
- -- Ethan Ward <ethan.ward@mycroft.ai>  Mon, 17 Jul 2017 10:06:08 +0000
+ -- Ethan Ward <ethan.ward@mycroft.ai>  Mon, 31 Jul 2017 17:05:20 -0500
