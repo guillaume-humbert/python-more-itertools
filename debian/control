@@ -19,7 +19,6 @@ Build-Depends: debhelper (>= 10),
                python3-vcversioner
 Standards-Version: 4.0.0
 Homepage: https://pypi.python.org/pypi/more-itertools/
-Testsuite: autopkgtest
 Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/more-itertools.git
 Vcs-Browser: https://anonscm.debian.org/git/python-modules/packages/more-itertools.git
 
