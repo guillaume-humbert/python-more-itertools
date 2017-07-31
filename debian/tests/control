@@ -1,20 +1,21 @@
 Test-Command: set -e
- ; cp -r tests "$ADTTMP"
+ ; cp -r tests "$AUTOPKGTEST_TMP"
  ; for py in $(pyversions -r 2>/dev/null)
- ; do cd "$ADTTMP"
+ ; do cd "$AUTOPKGTEST_TMP"
  ; echo "Testing with $py:"
  ; $py -m nose
  ; done
 Depends: python-all,
-         python-more-itertools
+         python-more-itertools,
+         python-nose
 
 Test-Command: set -e
- ; cp -r tests "$ADTTMP"
+ ; cp -r tests "$AUTOPKGTEST_TMP"
  ; for py in $(py3versions -r 2>/dev/null)
- ; do cd "$ADTTMP"
+ ; do cd "$AUTOPKGTEST_TMP"
  ; echo "Testing with $py:"
  ; $py -m nose
  ; done
 Depends: python3-all,
-         python3-more-itertools
-
+         python3-more-itertools,
+         python3-nose
