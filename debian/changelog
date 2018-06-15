@@ -1,5 +1,6 @@
-more-itertools (3.2.0-3) UNRELEASED; urgency=medium
+more-itertools (4.2.0-1) UNRELEASED; urgency=medium
 
+  * New upstream release
   * d/control: Set Vcs-* to salsa.debian.org
   * d/copyright: Use https protocol in Format field
 
