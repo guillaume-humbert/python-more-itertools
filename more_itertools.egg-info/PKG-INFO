@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: more-itertools
-Version: 3.2.0
+Version: 4.2.0
 Summary: More routines for operating on iterables, beyond itertools
 Home-page: https://github.com/erikrose/more-itertools
 Author: Erik Rose
@@ -72,8 +72,87 @@ Description: ==============
         
         
         
+        4.2.0
+        -----
+        
+        * New itertools:
+            * map_reduce (thanks to pylang)
+            * prepend (from the `Python 3.7 docs <https://docs.python.org/3.7/library/itertools.html#itertools-recipes>`_)
+        
+        * Improvements to existing itertools:
+            * bucket now complies with PEP 479 (thanks to irmen)
+        
+        * Other changes:
+           * Python 3.7 is now supported (thanks to irmen)
+           * Python 3.3 is no longer supported
+           * The test suite no longer requires third-party modules to run
+           * The API docs now include links to source code
+        
+        4.1.0
+        -----
+        
+        * New itertools:
+            * split_at (thanks to michael-celani)
+            * circular_shifts (thanks to hiqua)
+            * make_decorator - see the blog post `Yo, I heard you like decorators <https://sites.google.com/site/bbayles/index/decorator_factory>`_
+              for a tour (thanks to pylang)
+            * always_reversible (thanks to michael-celani)
+            * nth_combination (from the `Python 3.7 docs <https://docs.python.org/3.7/library/itertools.html#itertools-recipes>`_)
+        
+        * Improvements to existing itertools:
+            * seekable now has an ``elements`` method to return cached items.
+            * The performance tradeoffs between roundrobin and
+              interleave_longest are now documented (thanks michael-celani,
+              pylang, and MSeifert04)
+        
+        4.0.1
+        -----
+        
+        * No code changes - this release fixes how the docs display on PyPI.
+        
+        4.0.0
+        -----
+        
+        * New itertools:
+            * consecutive_groups (Based on the example in the `Python 2.4 docs <https://docs.python.org/release/2.4.4/lib/itertools-example.html>`_)
+            * seekable (If you're looking for how to "reset" an iterator,
+              you're in luck!)
+            * exactly_n (thanks to michael-celani)
+            * run_length.encode and run_length.decode
+            * difference
+        
+        * Improvements to existing itertools:
+            * The number of items between filler elements in intersperse can
+              now be specified (thanks to pylang)
+            * distinct_permutations and peekable got some minor
+              adjustments (thanks to MSeifert04)
+            * always_iterable now returns an iterator object. It also now
+              allows different types to be considered iterable (thanks to jaraco)
+            * bucket can now limit the keys it stores in memory
+            * one now allows for custom exceptions (thanks to kalekundert)
+        
+        * Other changes:
+            * A few typos were fixed (thanks to EdwardBetts)
+            * All tests can now be run with ``python setup.py test``
+        
+        The major version update is due to the change in the return value of always_iterable.
+        It now always returns iterator objects:
+        
+        .. code-block:: python
+        
+            >>> from more_itertools import always_iterable
+            # Non-iterable objects are wrapped with iter(tuple(obj))
+            >>> always_iterable(12345)
+            <tuple_iterator object at 0x7fb24c9488d0>
+            >>> list(always_iterable(12345))
+            [12345]
+            # Iterable objects are wrapped with iter()
+            >>> always_iterable([1, 2, 3, 4, 5])
+            <list_iterator object at 0x7fb24c948c50>
+        
         3.2.0
         -----
+        
         * New itertools:
             * lstrip, rstrip, and strip
               (thanks to MSeifert04 and pylang)
@@ -237,4 +316,6 @@ Classifier: Programming Language :: Python :: 3.2
 Classifier: Programming Language :: Python :: 3.3
 Classifier: Programming Language :: Python :: 3.4
 Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
 Classifier: Topic :: Software Development :: Libraries

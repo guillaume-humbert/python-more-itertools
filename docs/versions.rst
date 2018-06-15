@@ -4,8 +4,87 @@ Version History
 
 .. automodule:: more_itertools
 
+4.2.0
+-----
+
+* New itertools:
+    * :func:`map_reduce` (thanks to pylang)
+    * :func:`prepend` (from the `Python 3.7 docs <https://docs.python.org/3.7/library/itertools.html#itertools-recipes>`_)
+
+* Improvements to existing itertools:
+    * :func:`bucket` now complies with PEP 479 (thanks to irmen)
+
+* Other changes:
+   * Python 3.7 is now supported (thanks to irmen)
+   * Python 3.3 is no longer supported
+   * The test suite no longer requires third-party modules to run
+   * The API docs now include links to source code
+
+4.1.0
+-----
+
+* New itertools:
+    * :func:`split_at` (thanks to michael-celani)
+    * :func:`circular_shifts` (thanks to hiqua)
+    * :func:`make_decorator` - see the blog post `Yo, I heard you like decorators <https://sites.google.com/site/bbayles/index/decorator_factory>`_
+      for a tour (thanks to pylang)
+    * :func:`always_reversible` (thanks to michael-celani)
+    * :func:`nth_combination` (from the `Python 3.7 docs <https://docs.python.org/3.7/library/itertools.html#itertools-recipes>`_)
+
+* Improvements to existing itertools:
+    * :func:`seekable` now has an ``elements`` method to return cached items.
+    * The performance tradeoffs between :func:`roundrobin` and
+      :func:`interleave_longest` are now documented (thanks michael-celani,
+      pylang, and MSeifert04)
+
+4.0.1
+-----
+
+* No code changes - this release fixes how the docs display on PyPI.
+
+4.0.0
+-----
+
+* New itertools:
+    * :func:`consecutive_groups` (Based on the example in the `Python 2.4 docs <https://docs.python.org/release/2.4.4/lib/itertools-example.html>`_)
+    * :func:`seekable` (If you're looking for how to "reset" an iterator,
+      you're in luck!)
+    * :func:`exactly_n` (thanks to michael-celani)
+    * :func:`run_length.encode` and :func:`run_length.decode`
+    * :func:`difference`
+
+* Improvements to existing itertools:
+    * The number of items between filler elements in :func:`intersperse` can
+      now be specified (thanks to pylang)
+    * :func:`distinct_permutations` and :func:`peekable` got some minor
+      adjustments (thanks to MSeifert04)
+    * :func:`always_iterable` now returns an iterator object. It also now
+      allows different types to be considered iterable (thanks to jaraco)
+    * :func:`bucket` can now limit the keys it stores in memory
+    * :func:`one` now allows for custom exceptions (thanks to kalekundert)
+
+* Other changes:
+    * A few typos were fixed (thanks to EdwardBetts)
+    * All tests can now be run with ``python setup.py test``
+
+The major version update is due to the change in the return value of :func:`always_iterable`.
+It now always returns iterator objects:
+
+.. code-block:: python
+
+    >>> from more_itertools import always_iterable
+    # Non-iterable objects are wrapped with iter(tuple(obj))
+    >>> always_iterable(12345)
+    <tuple_iterator object at 0x7fb24c9488d0>
+    >>> list(always_iterable(12345))
+    [12345]
+    # Iterable objects are wrapped with iter()
+    >>> always_iterable([1, 2, 3, 4, 5])
+    <list_iterator object at 0x7fb24c948c50>
+
 3.2.0
 -----
+
 * New itertools:
     * :func:`lstrip`, :func:`rstrip`, and :func:`strip`
       (thanks to MSeifert04 and pylang)

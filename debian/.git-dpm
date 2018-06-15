@@ -1,11 +1,11 @@
 # see git-dpm(1) from git-dpm package
-036672a7344e73d5f180f8b03c59ca9544d0ce21
-036672a7344e73d5f180f8b03c59ca9544d0ce21
-036672a7344e73d5f180f8b03c59ca9544d0ce21
-036672a7344e73d5f180f8b03c59ca9544d0ce21
-more-itertools_3.2.0.orig.tar.gz
-7fb96c4f48643f28e83b5cf7fa2dd1f81cbbdbf7
-42528
+e6ae31025e575079448cf0a7d03c5ffebeab5306
+e6ae31025e575079448cf0a7d03c5ffebeab5306
+e6ae31025e575079448cf0a7d03c5ffebeab5306
+e6ae31025e575079448cf0a7d03c5ffebeab5306
+more-itertools_4.2.0.orig.tar.gz
+7d14e4dd435d762129e10ec28d2d9828d4cb9887
+56871
 debianTag="debian/%e%v"
 patchedTag="patched/%e%v"
 upstreamTag="upstream/%e%u"

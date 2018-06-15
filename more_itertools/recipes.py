@@ -28,10 +28,12 @@ __all__ = [
     'iter_except',
     'ncycles',
     'nth',
+    'nth_combination',
     'padnone',
     'pairwise',
     'partition',
     'powerset',
+    'prepend',
     'quantify',
     'random_combination_with_replacement',
     'random_combination',
@@ -300,7 +302,9 @@ def roundrobin(*iterables):
         >>> list(roundrobin('ABC', 'D', 'EF'))
         ['A', 'D', 'E', 'B', 'F', 'C']
 
-    See :func:`interleave_longest` for a slightly faster implementation.
+    This function produces the same output as :func:`interleave_longest`, but
+    may perform better for some inputs (in particular when the number of
+    iterables is small).
 
     """
     # Recipe credited to George Sakkis
@@ -344,7 +348,7 @@ def powerset(iterable):
 
     """
     s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+    return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
 
 
 def unique_everseen(iterable, key=None):
@@ -370,7 +374,7 @@ def unique_everseen(iterable, key=None):
                 if element not in seenset:
                     seenset_add(element)
                     yield element
-            except TypeError as e:
+            except TypeError:
                 if element not in seenlist:
                     seenlist_add(element)
                     yield element
@@ -381,7 +385,7 @@ def unique_everseen(iterable, key=None):
                 if k not in seenset:
                     seenset_add(k)
                     yield element
-            except TypeError as e:
+            except TypeError:
                 if k not in seenlist:
                     seenlist_add(k)
                     yield element
@@ -509,3 +513,53 @@ def random_combination_with_replacement(iterable, r):
     n = len(pool)
     indices = sorted(randrange(n) for i in range(r))
     return tuple(pool[i] for i in indices)
+
+
+def nth_combination(iterable, r, index):
+    """Equivalent to ``list(combinations(iterable, r))[index]``.
+
+    The subsequences of *iterable* that are of length *r* can be ordered
+    lexicographically. :func:`nth_combination` computes the subsequence at
+    sort position *index* directly, without computing the previous
+    subsequences.
+
+    """
+    pool = tuple(iterable)
+    n = len(pool)
+    if (r < 0) or (r > n):
+        raise ValueError
+
+    c = 1
+    k = min(r, n - r)
+    for i in range(1, k + 1):
+        c = c * (n - k + i) // i
+
+    if index < 0:
+        index += c
+
+    if (index < 0) or (index >= c):
+        raise IndexError
+
+    result = []
+    while r:
+        c, n, r = c * r // n, n - 1, r - 1
+        while index >= c:
+            index -= c
+            c, n = c * (n - r) // n, n - 1
+        result.append(pool[-1 - n])
+
+    return tuple(result)
+
+
+def prepend(value, iterator):
+    """Yield *value*, followed by the elements in *iterator*.
+
+        >>> value = '0'
+        >>> iterator = ['1', '2', '3']
+        >>> list(prepend(value, iterator))
+        ['0', '1', '2', '3']
+
+    To prepend multiple values, see :func:`itertools.chain`.
+
+    """
+    return chain([value], iterator)

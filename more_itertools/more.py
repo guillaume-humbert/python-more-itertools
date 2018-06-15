@@ -7,6 +7,7 @@ from itertools import (
     chain,
     compress,
     count,
+    cycle,
     dropwhile,
     groupby,
     islice,
@@ -14,26 +15,35 @@ from itertools import (
     takewhile,
     tee
 )
-from operator import itemgetter, lt, gt
+from operator import itemgetter, lt, gt, sub
 from sys import maxsize, version_info
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 from six import binary_type, string_types, text_type
 from six.moves import filter, map, range, zip, zip_longest
 
-from .recipes import flatten, take
+from .recipes import consume, flatten, take
 
 __all__ = [
     'adjacent',
     'always_iterable',
+    'always_reversible',
     'bucket',
     'chunked',
+    'circular_shifts',
     'collapse',
     'collate',
+    'consecutive_groups',
     'consumer',
     'count_cycle',
+    'difference',
     'distinct_permutations',
     'distribute',
     'divide',
+    'exactly_n',
     'first',
     'groupby_transform',
     'ilen',
@@ -44,14 +54,20 @@ __all__ = [
     'iterate',
     'locate',
     'lstrip',
+    'make_decorator',
+    'map_reduce',
     'numeric_range',
     'one',
     'padded',
     'peekable',
     'rstrip',
+    'run_length',
+    'seekable',
+    'SequenceView',
     'side_effect',
     'sliced',
     'sort_together',
+    'split_at',
     'split_after',
     'split_before',
     'spy',
@@ -249,9 +265,7 @@ class peekable(object):
 
         return next(self._it)
 
-    def next(self):
-        # For Python 2 compatibility
-        return self.__next__()
+    next = __next__  # For Python 2 compatibility
 
     def _get_slice(self, index):
         # Normalize the slice's arguments
@@ -311,7 +325,7 @@ def _collate(*iterables, **kwargs):
 
 def collate(*iterables, **kwargs):
     """Return a sorted merge of the items from each of several already-sorted
-    ``iterables``.
+    *iterables*.
 
         >>> list(collate('ACDZ', 'AZ', 'JKL'))
         ['A', 'A', 'C', 'D', 'J', 'K', 'L', 'Z', 'Z']
@@ -320,17 +334,26 @@ def collate(*iterables, **kwargs):
     :func:`collate` to, for example, perform a n-way mergesort of items that
     don't fit in memory.
 
-    :arg key: A function that returns a comparison value for an item. Defaults
-        to the identity function.
-    :arg reverse: If ``reverse=True``, yield results in descending order
-        rather than ascending. ``iterables`` must also yield their elements in
-        descending order.
+    If a *key* function is specified, the iterables will be sorted according
+    to its result:
+
+        >>> key = lambda s: int(s)  # Sort by numeric value, not by string
+        >>> list(collate(['1', '10'], ['2', '11'], key=key))
+        ['1', '2', '10', '11']
+
+
+    If the *iterables* are sorted in descending order, set *reverse* to
+    ``True``:
+
+        >>> list(collate([5, 3, 1], [4, 2, 0], reverse=True))
+        [5, 4, 3, 2, 1, 0]
 
     If the elements of the passed-in iterables are out of order, you might get
     unexpected results.
 
-    If neither of the keyword arguments are specified, this function delegates
-    to :func:`heapq.merge`.
+    On Python 2.7, this function delegates to :func:`heapq.merge` if neither
+    of the keyword arguments are specified. On Python 3.5+, this function
+    is an alias for :func:`heapq.merge`.
 
     """
     if not kwargs:
@@ -342,7 +365,9 @@ def collate(*iterables, **kwargs):
 # If using Python version 3.5 or greater, heapq.merge() will be faster than
 # collate - use that instead.
 if version_info >= (3, 5, 0):
-    collate = merge
+    _collate_docstring = collate.__doc__
+    collate = partial(merge)
+    collate.__doc__ = _collate_docstring
 
 
 def consumer(func):
@@ -384,7 +409,11 @@ def ilen(iterable):
     This consumes the iterable, so handle with care.
 
     """
+    # maxlen=1 only stores the last item in the deque
     d = deque(enumerate(iterable, 1), maxlen=1)
+    # since we started enumerate at 1,
+    # the first item of the last pair will be the length of the iterable
+    # (assuming there were items)
     return d[0][0] if d else 0
 
 
@@ -417,34 +446,65 @@ def with_iter(context_manager):
             yield item
 
 
-def one(iterable):
-    """Return the only element from the iterable.
+def one(iterable, too_short=None, too_long=None):
+    """Return the first item from *iterable*, which is expected to contain only
+    that item. Raise an exception if *iterable* is empty or has more than one
+    item.
 
-    Raise ValueError if the iterable is empty or longer than 1 element. For
-    example, assert that a DB query returns a single, unique result.
+    :func:`one` is useful for ensuring that an iterable contains only one item.
+    For example, it can be used to retrieve the result of a database query
+    that is expected to return a single row.
 
-        >>> one(['val'])
-        'val'
+    If *iterable* is empty, ``ValueError`` will be raised. You may specify a
+    different exception with the *too_short* keyword:
 
-        >>> one(['val', 'other'])  # doctest: +IGNORE_EXCEPTION_DETAIL
+        >>> it = []
+        >>> one(it)  # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
-        ValueError: too many values to unpack (expected 1)
-
-        >>> one([])  # doctest: +IGNORE_EXCEPTION_DETAIL
+        ValueError: too many items in iterable (expected 1)'
+        >>> too_short = IndexError('too few items')
+        >>> one(it, too_short=too_short)  # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
-        ValueError: not enough values to unpack (expected 1, got 0)
+        IndexError: too few items
 
-    ``one()`` attempts to advance the iterable twice in order to ensure there
-    aren't further items. Because this discards any second item, ``one()`` is
-    not suitable in situations where you want to catch its exception and then
-    try an alternative treatment of the iterable. It should be used only when a
-    iterable longer than 1 item is, in fact, an error.
+    Similarly, if *iterable* contains more than one item, ``ValueError`` will
+    be raised. You may specify a different exception with the *too_long*
+    keyword:
+
+        >>> it = ['too', 'many']
+        >>> one(it)  # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        ...
+        ValueError: too many items in iterable (expected 1)'
+        >>> too_long = RuntimeError
+        >>> one(it, too_long=too_long)  # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        ...
+        RuntimeError
+
+    Note that :func:`one` attempts to advance *iterable* twice to ensure there
+    is only one item. If there is more than one, both items will be discarded.
+    See :func:`spy` or :func:`peekable` to check iterable contents less
+    destructively.
 
     """
-    element, = iterable
-    return element
+    it = iter(iterable)
+
+    try:
+        value = next(it)
+    except StopIteration:
+        raise too_short or ValueError('too few items in iterable (expected 1)')
+
+    try:
+        next(it)
+    except StopIteration:
+        pass
+    else:
+        raise too_long or ValueError('too many items in iterable (expected 1)')
+
+    return value
 
 
 def distinct_permutations(iterable):
@@ -487,28 +547,36 @@ def distinct_permutations(iterable):
                     yield x
                 item_counts[item] += 1
 
-    item_counts = {}
-    for item in iterable:
-        item_counts[item] = item_counts.get(item, 0) + 1
+    item_counts = Counter(iterable)
+    length = sum(item_counts.values())
 
-    return perm_unique_helper(item_counts, [None] * len(iterable),
-                              len(iterable) - 1)
+    return perm_unique_helper(item_counts, [None] * length, length - 1)
 
 
-def intersperse(e, iterable):
-    """Intersperse object *e* between the items of *iterable*.
+def intersperse(e, iterable, n=1):
+    """Intersperse filler element *e* among the items in *iterable*, leaving
+    *n* items between each filler element.
 
-        >>> list(intersperse('x', 'ABCD'))
-        ['A', 'x', 'B', 'x', 'C', 'x', 'D']
-        >>> list(intersperse(None, [1, 2, 3]))
-        [1, None, 2, None, 3]
+        >>> list(intersperse('!', [1, 2, 3, 4, 5]))
+        [1, '!', 2, '!', 3, '!', 4, '!', 5]
+
+        >>> list(intersperse(None, [1, 2, 3, 4, 5], n=2))
+        [1, 2, None, 3, 4, None, 5]
 
     """
-    it = iter(iterable)
-    filler = repeat(e)
-    zipped = flatten(zip(filler, it))
-    next(zipped)
-    return zipped
+    if n == 0:
+        raise ValueError('n must be > 0')
+    elif n == 1:
+        # interleave(repeat(e), iterable) -> e, x_0, e, e, x_1, e, x_2...
+        # islice(..., 1, None) -> x_0, e, e, x_1, e, x_2...
+        return islice(interleave(repeat(e), iterable), 1, None)
+    else:
+        # interleave(filler, chunks) -> [e], [x_0, x_1], [e], [x_2, x_3]...
+        # islice(..., 1, None) -> [x_0, x_1], [e], [x_2, x_3]...
+        # flatten(...) -> x_0, x_1, e, x_2, x_3...
+        filler = repeat([e])
+        chunks = chunked(iterable, n)
+        return flatten(islice(interleave(filler, chunks), 1, None))
 
 
 def unique_to_each(*iterables):
@@ -601,7 +669,7 @@ class bucket(object):
     child iterables based on a *key* function.
 
         >>> iterable = ['a1', 'b1', 'c1', 'a2', 'b2', 'c2', 'b3']
-        >>> s = bucket(iterable, key=lambda s: s[0])
+        >>> s = bucket(iterable, key=lambda x: x[0])
         >>> a_iterable = s['a']
         >>> next(a_iterable)
         'a1'
@@ -613,16 +681,32 @@ class bucket(object):
     The original iterable will be advanced and its items will be cached until
     they are used by the child iterables. This may require significant storage.
 
-    Be aware that attempting to select a bucket that no items correspond to
-    will exhaust the iterable and cache all values.
+    By default, attempting to select a bucket to which no items belong  will
+    exhaust the iterable and cache all values.
+    If you specify a *validator* function, selected buckets will instead be
+    checked against it.
+
+        >>> from itertools import count
+        >>> it = count(1, 2)  # Infinite sequence of odd numbers
+        >>> key = lambda x: x % 10  # Bucket by last digit
+        >>> validator = lambda x: x in {1, 3, 5, 7, 9}  # Odd digits only
+        >>> s = bucket(it, key=key, validator=validator)
+        >>> 2 in s
+        False
+        >>> list(s[2])
+        []
 
     """
-    def __init__(self, iterable, key):
+    def __init__(self, iterable, key, validator=None):
         self._it = iter(iterable)
         self._key = key
         self._cache = defaultdict(deque)
+        self._validator = validator or (lambda x: True)
 
     def __contains__(self, value):
+        if not self._validator(value):
+            return False
+
         try:
             item = next(self[value])
         except StopIteration:
@@ -647,15 +731,21 @@ class bucket(object):
             # a matching item, caching the rest.
             else:
                 while True:
-                    item = next(self._it)
+                    try:
+                        item = next(self._it)
+                    except StopIteration:
+                        return
                     item_value = self._key(item)
                     if item_value == value:
                         yield item
                         break
-                    else:
+                    elif self._validator(item_value):
                         self._cache[item_value].append(item)
 
     def __getitem__(self, value):
+        if not self._validator(value):
+            return iter(())
+
         return self._get_values(value)
 
 
@@ -723,9 +813,13 @@ def interleave_longest(*iterables):
         >>> list(interleave_longest([1, 2, 3], [4, 5], [6, 7, 8]))
         [1, 4, 6, 2, 5, 7, 3, 8]
 
+    This function produces the same output as :func:`roundrobin`, but may
+    perform better for some inputs (in particular when the number of iterables
+    is large).
+
     """
     i = chain.from_iterable(zip_longest(*iterables, fillvalue=_marker))
-    return filter(lambda x: x is not _marker, i)
+    return (x for x in i if x is not _marker)
 
 
 def collapse(iterable, base_type=None, levels=None):
@@ -854,6 +948,27 @@ def sliced(seq, n):
 
     """
     return takewhile(bool, (seq[i: i + n] for i in count(0, n)))
+
+
+def split_at(iterable, pred):
+    """Yield lists of items from *iterable*, where each list is delimited by
+    an item where callable *pred* returns ``True``. The lists do not include
+    the delimiting items.
+
+        >>> list(split_at('abcdcba', lambda x: x == 'b'))
+        [['a'], ['c', 'd', 'c'], ['a']]
+
+        >>> list(split_at(range(10), lambda n: n % 2 == 1))
+        [[0], [2], [4], [6], [8], []]
+    """
+    buf = []
+    for item in iterable:
+        if pred(item):
+            yield buf
+            buf = []
+        else:
+            buf.append(item)
+    yield buf
 
 
 def split_before(iterable, pred):
@@ -1113,54 +1228,57 @@ def divide(n, iterable):
     return ret
 
 
-def always_iterable(obj):
-    """
-    Given an object, always return an iterable.
+def always_iterable(obj, base_type=(text_type, binary_type)):
+    """If *obj* is iterable, return an iterator over its items::
 
-    If the object is not already iterable, return a tuple containing containing
-    the object::
-
-        >>> always_iterable(1)
-        (1,)
-
-    If the object is ``None``, return an empty iterable::
-
-        >>> always_iterable(None)
-        ()
-
-    Otherwise, return the object itself::
-
-        >>> always_iterable([1, 2, 3])
+        >>> obj = (1, 2, 3)
+        >>> list(always_iterable(obj))
         [1, 2, 3]
 
-    Strings (binary or unicode) are not considered to be iterable::
+    If *obj* is not iterable, return a one-item iterable containing *obj*::
 
-        >>> always_iterable('foo')
-        ('foo',)
+        >>> obj = 1
+        >>> list(always_iterable(obj))
+        [1]
 
-    This function is useful in applications where a passed parameter may be
-    either a single item or a collection of items::
+    If *obj* is ``None``, return an empty iterable:
 
-        >>> def item_sum(param):
-        ...     total = 0
-        ...     for item in always_iterable(param):
-        ...         total += item
-        ...
-        ...     return total
-        >>> item_sum(10)
-        10
-        >>> item_sum([10, 20])
-        30
+        >>> obj = None
+        >>> list(always_iterable(None))
+        []
 
+    By default, binary and text strings are not considered iterable::
+
+        >>> obj = 'foo'
+        >>> list(always_iterable(obj))
+        ['foo']
+
+    If *base_type* is set, objects for which ``isinstance(obj, base_type)``
+    returns ``True`` won't be considered iterable.
+
+        >>> obj = {'a': 1}
+        >>> list(always_iterable(obj))  # Iterate over the dict's keys
+        ['a']
+        >>> list(always_iterable(obj, base_type=dict))  # Treat dicts as a unit
+        [{'a': 1}]
+
+    Set *base_type* to ``None`` to avoid any special handling and treat objects
+    Python considers iterable as iterable:
+
+        >>> obj = 'foo'
+        >>> list(always_iterable(obj, base_type=None))
+        ['f', 'o', 'o']
     """
     if obj is None:
-        return ()
+        return iter(())
 
-    string_like_types = (text_type, binary_type)
-    if isinstance(obj, string_like_types) or not hasattr(obj, '__iter__'):
-        return obj,
+    if (base_type is not None) and isinstance(obj, base_type):
+        return iter((obj,))
 
-    return obj
+    try:
+        return iter(obj)
+    except TypeError:
+        return iter((obj,))
 
 
 def adjacent(predicate, iterable, distance=1):
@@ -1230,6 +1348,10 @@ def groupby_transform(iterable, keyfunc=None, valuefunc=None):
         >>> grouper = groupby_transform(iterable, itemgetter(0), itemgetter(1))
         >>> [(k, ''.join(g)) for k, g in grouper]
         [(0, 'ab'), (1, 'cde'), (2, 'fgh'), (3, 'i')]
+
+    Note that the order of items in the iterable is significant.
+    Only adjacent items are grouped together, so if you don't want any
+    duplicate groups, you should sort the iterable by the key function.
 
     """
     valuefunc = (lambda x: x) if valuefunc is None else valuefunc
@@ -1337,6 +1459,20 @@ def locate(iterable, pred=bool):
         >>> list(locate(windowed(iterable, len(sub)), pred=pred))
         [1, 5, 9]
 
+    Use with :func:`seekable` to find indexes and then retrieve the associated
+    items:
+
+        >>> from itertools import count
+        >>> from more_itertools import seekable
+        >>> source = (3 * n + 1 if (n % 2) else n // 2 for n in count())
+        >>> it = seekable(source)
+        >>> pred = lambda x: x > 100
+        >>> indexes = locate(it, pred=pred)
+        >>> i = next(indexes)
+        >>> it.seek(i)
+        >>> next(it)
+        106
+
     """
     return compress(count(), map(pred, iterable))
 
@@ -1352,7 +1488,8 @@ def lstrip(iterable, pred):
         >>> list(lstrip(iterable, pred))
         [1, 2, None, 3, False, None]
 
-    This function is analagous to to :func:`str.lstrip`.
+    This function is analogous to to :func:`str.lstrip`, and is essentially
+    an wrapper for :func:`itertools.dropwhile`.
 
     """
     return dropwhile(pred, iterable)
@@ -1369,7 +1506,7 @@ def rstrip(iterable, pred):
         >>> list(rstrip(iterable, pred))
         [None, False, None, 1, 2, None, 3]
 
-    This function is analagous to :func:`str.rstrip`.
+    This function is analogous to :func:`str.rstrip`.
 
     """
     cache = []
@@ -1395,7 +1532,7 @@ def strip(iterable, pred):
         >>> list(strip(iterable, pred))
         [1, 2, None, 3]
 
-    This function is analagous to :func:`str.strip`.
+    This function is analogous to :func:`str.strip`.
 
     """
     return rstrip(lstrip(iterable, pred), pred)
@@ -1452,7 +1589,7 @@ def islice_extended(iterable, *args):
             if n <= 0:
                 return
 
-            for index, item in islice(cache, None, n, step):
+            for index, item in islice(cache, 0, n, step):
                 yield item
         elif (stop is not None) and (stop < 0):
             # Advance to the start position
@@ -1517,3 +1654,415 @@ def islice_extended(iterable, *args):
 
             for item in cache[i::step]:
                 yield item
+
+
+def always_reversible(iterable):
+    """An extension of :func:`reversed` that supports all iterables, not
+    just those which implement the ``Reversible`` or ``Sequence`` protocols.
+
+        >>> print(*always_reversible(x for x in range(3)))
+        2 1 0
+
+    If the iterable is already reversible, this function returns the
+    result of :func:`reversed()`. If the iterable is not reversible,
+    this function will cache the remaining items in the iterable and
+    yield them in reverse order, which may require significant storage.
+    """
+    try:
+        return reversed(iterable)
+    except TypeError:
+        return reversed(list(iterable))
+
+
+def consecutive_groups(iterable, ordering=lambda x: x):
+    """Yield groups of consecutive items using :func:`itertools.groupby`.
+    The *ordering* function determines whether two items are adjacent by
+    returning their position.
+
+    By default, the ordering function is the identity function. This is
+    suitable for finding runs of numbers:
+
+        >>> iterable = [1, 10, 11, 12, 20, 30, 31, 32, 33, 40]
+        >>> for group in consecutive_groups(iterable):
+        ...     print(list(group))
+        [1]
+        [10, 11, 12]
+        [20]
+        [30, 31, 32, 33]
+        [40]
+
+    For finding runs of adjacent letters, try using the :meth:`index` method
+    of a string of letters:
+
+        >>> from string import ascii_lowercase
+        >>> iterable = 'abcdfgilmnop'
+        >>> ordering = ascii_lowercase.index
+        >>> for group in consecutive_groups(iterable, ordering):
+        ...     print(list(group))
+        ['a', 'b', 'c', 'd']
+        ['f', 'g']
+        ['i']
+        ['l', 'm', 'n', 'o', 'p']
+
+    """
+    for k, g in groupby(
+        enumerate(iterable), key=lambda x: x[0] - ordering(x[1])
+    ):
+        yield map(itemgetter(1), g)
+
+
+def difference(iterable, func=sub):
+    """By default, compute the first difference of *iterable* using
+    :func:`operator.sub`.
+
+        >>> iterable = [0, 1, 3, 6, 10]
+        >>> list(difference(iterable))
+        [0, 1, 2, 3, 4]
+
+    This is the opposite of :func:`accumulate`'s default behavior:
+
+        >>> from more_itertools import accumulate
+        >>> iterable = [0, 1, 2, 3, 4]
+        >>> list(accumulate(iterable))
+        [0, 1, 3, 6, 10]
+        >>> list(difference(accumulate(iterable)))
+        [0, 1, 2, 3, 4]
+
+    By default *func* is :func:`operator.sub`, but other functions can be
+    specified. They will be applied as follows::
+
+        A, B, C, D, ... --> A, func(B, A), func(C, B), func(D, C), ...
+
+    For example, to do progressive division:
+
+        >>> iterable = [1, 2, 6, 24, 120]  # Factorial sequence
+        >>> func = lambda x, y: x // y
+        >>> list(difference(iterable, func))
+        [1, 2, 3, 4, 5]
+
+    """
+    a, b = tee(iterable)
+    try:
+        item = next(b)
+    except StopIteration:
+        return iter([])
+    return chain([item], map(lambda x: func(x[1], x[0]), zip(a, b)))
+
+
+class SequenceView(Sequence):
+    """Return a read-only view of the sequence object *target*.
+
+    :class:`SequenceView` objects are analagous to Python's built-in
+    "dictionary view" types. They provide a dynamic view of a sequence's items,
+    meaning that when the sequence updates, so does the view.
+
+        >>> seq = ['0', '1', '2']
+        >>> view = SequenceView(seq)
+        >>> view
+        SequenceView(['0', '1', '2'])
+        >>> seq.append('3')
+        >>> view
+        SequenceView(['0', '1', '2', '3'])
+
+    Sequence views support indexing, slicing, and length queries. They act
+    like the underlying sequence, except they don't allow assignment:
+
+        >>> view[1]
+        '1'
+        >>> view[1:-1]
+        ['1', '2']
+        >>> len(view)
+        4
+
+    Sequence views are useful as an alternative to copying, as they don't
+    require (much) extra storage.
+
+    """
+    def __init__(self, target):
+        if not isinstance(target, Sequence):
+            raise TypeError
+        self._target = target
+
+    def __getitem__(self, index):
+        return self._target[index]
+
+    def __len__(self):
+        return len(self._target)
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, repr(self._target))
+
+
+class seekable(object):
+    """Wrap an iterator to allow for seeking backward and forward. This
+    progressively caches the items in the source iterable so they can be
+    re-visited.
+
+    Call :meth:`seek` with an index to seek to that position in the source
+    iterable.
+
+    To "reset" an iterator, seek to ``0``:
+
+        >>> from itertools import count
+        >>> it = seekable((str(n) for n in count()))
+        >>> next(it), next(it), next(it)
+        ('0', '1', '2')
+        >>> it.seek(0)
+        >>> next(it), next(it), next(it)
+        ('0', '1', '2')
+        >>> next(it)
+        '3'
+
+    You can also seek forward:
+
+        >>> it = seekable((str(n) for n in range(20)))
+        >>> it.seek(10)
+        >>> next(it)
+        '10'
+        >>> it.seek(20)  # Seeking past the end of the source isn't a problem
+        >>> list(it)
+        []
+        >>> it.seek(0)  # Resetting works even after hitting the end
+        >>> next(it), next(it), next(it)
+        ('0', '1', '2')
+
+    The cache grows as the source iterable progresses, so beware of wrapping
+    very large or infinite iterables.
+
+    You may view the contents of the cache with the :meth:`elements` method.
+    That returns a :class:`SequenceView`, a view that updates automatically:
+
+        >>> it = seekable((str(n) for n in range(10)))
+        >>> next(it), next(it), next(it)
+        ('0', '1', '2')
+        >>> elements = it.elements()
+        >>> elements
+        SequenceView(['0', '1', '2'])
+        >>> next(it)
+        '3'
+        >>> elements
+        SequenceView(['0', '1', '2', '3'])
+
+    """
+
+    def __init__(self, iterable):
+        self._source = iter(iterable)
+        self._cache = []
+        self._index = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._index is not None:
+            try:
+                item = self._cache[self._index]
+            except IndexError:
+                self._index = None
+            else:
+                self._index += 1
+                return item
+
+        item = next(self._source)
+        self._cache.append(item)
+        return item
+
+    next = __next__
+
+    def elements(self):
+        return SequenceView(self._cache)
+
+    def seek(self, index):
+        self._index = index
+        remainder = index - len(self._cache)
+        if remainder > 0:
+            consume(self, remainder)
+
+
+class run_length(object):
+    """
+    :func:`run_length.encode` compresses an iterable with run-length encoding.
+    It yields groups of repeated items with the count of how many times they
+    were repeated:
+
+        >>> uncompressed = 'abbcccdddd'
+        >>> list(run_length.encode(uncompressed))
+        [('a', 1), ('b', 2), ('c', 3), ('d', 4)]
+
+    :func:`run_length.decode` decompresses an iterable that was previously
+    compressed with run-length encoding. It yields the items of the
+    decompressed iterable:
+
+        >>> compressed = [('a', 1), ('b', 2), ('c', 3), ('d', 4)]
+        >>> list(run_length.decode(compressed))
+        ['a', 'b', 'b', 'c', 'c', 'c', 'd', 'd', 'd', 'd']
+
+    """
+
+    @staticmethod
+    def encode(iterable):
+        return ((k, ilen(g)) for k, g in groupby(iterable))
+
+    @staticmethod
+    def decode(iterable):
+        return chain.from_iterable(repeat(k, n) for k, n in iterable)
+
+
+def exactly_n(iterable, n, predicate=bool):
+    """Return ``True`` if exactly ``n`` items in the iterable are ``True``
+    according to the *predicate* function.
+
+        >>> exactly_n([True, True, False], 2)
+        True
+        >>> exactly_n([True, True, False], 1)
+        False
+        >>> exactly_n([0, 1, 2, 3, 4, 5], 3, lambda x: x < 3)
+        True
+
+    The iterable will be advanced until ``n + 1`` truthy items are encountered,
+    so avoid calling it on infinite iterables.
+
+    """
+    return len(take(n + 1, filter(predicate, iterable))) == n
+
+
+def circular_shifts(iterable):
+    """Return a list of circular shifts of *iterable*.
+
+        >>> circular_shifts(range(4))
+        [(0, 1, 2, 3), (1, 2, 3, 0), (2, 3, 0, 1), (3, 0, 1, 2)]
+    """
+    lst = list(iterable)
+    return take(len(lst), windowed(cycle(lst), len(lst)))
+
+
+def make_decorator(wrapping_func, result_index=0):
+    """Return a decorator version of *wrapping_func*, which is a function that
+    modifies an iterable. *result_index* is the position in that function's
+    signature where the iterable goes.
+
+    This lets you use itertools on the "production end," i.e. at function
+    definition. This can augment what the function returns without changing the
+    function's code.
+
+    For example, to produce a decorator version of :func:`chunked`:
+
+        >>> from more_itertools import chunked
+        >>> chunker = make_decorator(chunked, result_index=0)
+        >>> @chunker(3)
+        ... def iter_range(n):
+        ...     return iter(range(n))
+        ...
+        >>> list(iter_range(9))
+        [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+
+    To only allow truthy items to be returned:
+
+        >>> truth_serum = make_decorator(filter, result_index=1)
+        >>> @truth_serum(bool)
+        ... def boolean_test():
+        ...     return [0, 1, '', ' ', False, True]
+        ...
+        >>> list(boolean_test())
+        [1, ' ', True]
+
+    The :func:`peekable` and :func:`seekable` wrappers make for practical
+    decorators:
+
+        >>> from more_itertools import peekable
+        >>> peekable_function = make_decorator(peekable)
+        >>> @peekable_function()
+        ... def str_range(*args):
+        ...     return (str(x) for x in range(*args))
+        ...
+        >>> it = str_range(1, 20, 2)
+        >>> next(it), next(it), next(it)
+        ('1', '3', '5')
+        >>> it.peek()
+        '7'
+        >>> next(it)
+        '7'
+
+    """
+    # See https://sites.google.com/site/bbayles/index/decorator_factory for
+    # notes on how this works.
+    def decorator(*wrapping_args, **wrapping_kwargs):
+        def outer_wrapper(f):
+            def inner_wrapper(*args, **kwargs):
+                result = f(*args, **kwargs)
+                wrapping_args_ = list(wrapping_args)
+                wrapping_args_.insert(result_index, result)
+                return wrapping_func(*wrapping_args_, **wrapping_kwargs)
+
+            return inner_wrapper
+
+        return outer_wrapper
+
+    return decorator
+
+
+def map_reduce(iterable, keyfunc, valuefunc=None, reducefunc=None):
+    """Return a dictionary that maps the items in *iterable* to categories
+    defined by *keyfunc*, transforms them with *valuefunc*, and
+    then summarizes them by category with *reducefunc*.
+
+    *valuefunc* defaults to the identity function if it is unspecified.
+    If *reducefunc* is unspecified, no summarization takes place:
+
+        >>> keyfunc = lambda x: x.upper()
+        >>> result = map_reduce('abbccc', keyfunc)
+        >>> sorted(result.items())
+        [('A', ['a']), ('B', ['b', 'b']), ('C', ['c', 'c', 'c'])]
+
+    Specifying *valuefunc* transforms the categorized items:
+
+        >>> keyfunc = lambda x: x.upper()
+        >>> valuefunc = lambda x: 1
+        >>> result = map_reduce('abbccc', keyfunc, valuefunc)
+        >>> sorted(result.items())
+        [('A', [1]), ('B', [1, 1]), ('C', [1, 1, 1])]
+
+    Specifying *reducefunc* summarizes the categorized items:
+
+        >>> keyfunc = lambda x: x.upper()
+        >>> valuefunc = lambda x: 1
+        >>> reducefunc = sum
+        >>> result = map_reduce('abbccc', keyfunc, valuefunc, reducefunc)
+        >>> sorted(result.items())
+        [('A', 1), ('B', 2), ('C', 3)]
+
+    You may want to filter the input iterable before applying the map/reduce
+    proecdure:
+
+        >>> all_items = range(30)
+        >>> items = [x for x in all_items if 10 <= x <= 20]  # Filter
+        >>> keyfunc = lambda x: x % 2  # Evens map to 0; odds to 1
+        >>> categories = map_reduce(items, keyfunc=keyfunc)
+        >>> sorted(categories.items())
+        [(0, [10, 12, 14, 16, 18, 20]), (1, [11, 13, 15, 17, 19])]
+        >>> summaries = map_reduce(items, keyfunc=keyfunc, reducefunc=sum)
+        >>> sorted(summaries.items())
+        [(0, 90), (1, 75)]
+
+    Note that all items in the iterable are gathered into a list before the
+    summarization step, which may require significant storage.
+
+    The returned object is a :obj:`collections.defaultdict` with the
+    ``default_factory`` set to ``None``, such that it behaves like a normal
+    dictionary.
+
+    """
+    valuefunc = (lambda x: x) if (valuefunc is None) else valuefunc
+
+    ret = defaultdict(list)
+    for item in iterable:
+        key = keyfunc(item)
+        value = valuefunc(item)
+        ret[key].append(value)
+
+    if reducefunc is not None:
+        for key, value_list in ret.items():
+            ret[key] = reducefunc(value_list)
+
+    ret.default_factory = None
+    return ret

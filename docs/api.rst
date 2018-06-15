@@ -17,6 +17,7 @@ These tools yield groups of items from a source iterable.
 .. autofunction:: sliced
 .. autofunction:: distribute
 .. autofunction:: divide
+.. autofunction:: split_at
 .. autofunction:: split_before
 .. autofunction:: split_after
 .. autofunction:: bucket
@@ -29,8 +30,8 @@ These tools yield groups of items from a source iterable.
 .. autofunction:: partition
 
 
-Lookahead
-=========
+Lookahead and lookback
+======================
 
 These tools peek at an iterable's values without advancing it.
 
@@ -41,6 +42,7 @@ These tools peek at an iterable's values without advancing it.
 
 .. autofunction:: spy
 .. autoclass:: peekable
+.. autoclass:: seekable
 
 
 Windowing
@@ -108,6 +110,7 @@ These tools combine multiple iterables.
 .. autofunction:: dotproduct
 .. autofunction:: flatten
 .. autofunction:: roundrobin
+.. autofunction:: prepend
 
 
 Summarizing
@@ -123,7 +126,11 @@ These tools return summarized or aggregated data from an iterable.
 .. autofunction:: first(iterable[, default])
 .. autofunction:: one
 .. autofunction:: unique_to_each
-.. autofunction:: locate
+.. autofunction:: locate(iterable, pred=bool)
+.. autofunction:: consecutive_groups(iterable, ordering=lambda x: x)
+.. autofunction:: exactly_n(iterable, n, predicate=bool)
+.. autoclass:: run_length
+.. autofunction:: map_reduce
 
 ----
 
@@ -132,13 +139,13 @@ These tools return summarized or aggregated data from an iterable.
 .. autofunction:: all_equal
 .. autofunction:: first_true
 .. autofunction:: nth
-.. autofunction:: quantify
+.. autofunction:: quantify(iterable, pred=bool)
 
 
 Selecting
 =========
 
-These yools yield certain items from an iterable.
+These tools yield certain items from an iterable.
 
 ----
 
@@ -169,6 +176,7 @@ These tools yield combinatorial arrangements of items from iterables.
 **New itertools**
 
 .. autofunction:: distinct_permutations
+.. autofunction:: circular_shifts
 
 ----
 
@@ -179,6 +187,7 @@ These tools yield combinatorial arrangements of items from iterables.
 .. autofunction:: random_permutation
 .. autofunction:: random_combination
 .. autofunction:: random_combination_with_replacement
+.. autofunction:: nth_combination
 
 
 Wrapping
@@ -208,14 +217,18 @@ Others
 **New itertools**
 
 .. autofunction:: numeric_range(start, stop, step)
+.. autofunction:: always_reversible
 .. autofunction:: side_effect
 .. autofunction:: iterate
+.. autofunction:: difference(iterable, func=operator.sub)
+.. autofunction:: make_decorator
+.. autoclass:: SequenceView
 
 ----
 
 **Itertools recipes**
 
 .. autofunction:: consume
-.. autofunction:: accumulate
+.. autofunction:: accumulate(iterable, func=operator.add)
 .. autofunction:: tabulate
 .. autofunction:: repeatfunc
