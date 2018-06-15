@@ -9,6 +9,7 @@ more-itertools (4.2.0-1) UNRELEASED; urgency=medium
     - Bump Standards-Version to 4.1.4 (no changes)
   * d/copyright: Use https protocol in Format field
   * Bump debhelper compat level to 11
+  * Add pypy version of package
 
  -- Ondřej Nový <onovy@debian.org>  Tue, 13 Feb 2018 10:14:06 +0100
 

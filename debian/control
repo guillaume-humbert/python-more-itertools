@@ -5,6 +5,10 @@ Maintainer: Debian Python Modules Team <python-modules-team@lists.alioth.debian.
 Uploaders: Ethan Ward <ethan.ward@mycroft.ai>
 Build-Depends: debhelper (>= 11),
                dh-python,
+               pypy,
+               pypy-setuptools,
+               pypy-six (<< 2.0.0),
+               pypy-six (>= 1.0.0),
                python-all,
                python-setuptools,
                python-six (<< 2.0.0),
@@ -40,3 +44,14 @@ Description: library with routines for operating on iterables, beyond itertools 
  and routines for working with Python iterables.
  .
  This package contains the module for Python 3.
+
+Package: pypy-more-itertools
+Architecture: all
+Depends: ${misc:Depends}, ${pypy:Depends}
+Description: library with routines for operating on iterables, beyond itertools (PyPy)
+ Python's itertools library is a gem - you can compose elegant solutions
+ for a variety of problems with the functions it provides.
+ More-itertools collects additional building blocks, recipes,
+ and routines for working with Python iterables.
+ .
+ This package contains the module for PyPy.

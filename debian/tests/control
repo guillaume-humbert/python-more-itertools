@@ -1,5 +1,17 @@
 Test-Command: set -e
  ; cp -r setup.* README.rst docs/ more_itertools/tests "$AUTOPKGTEST_TMP"
+ ; for py in pypy
+ ; do cd "$AUTOPKGTEST_TMP"
+ ; echo "Testing with $py:"
+ ; $py setup.py test
+ ; done
+Depends: pypy,
+         pypy-more-itertools,
+         pypy-setuptools,
+Restrictions: allow-stderr
+
+Test-Command: set -e
+ ; cp -r setup.* README.rst docs/ more_itertools/tests "$AUTOPKGTEST_TMP"
  ; for py in $(pyversions -r 2>/dev/null)
  ; do cd "$AUTOPKGTEST_TMP"
  ; echo "Testing with $py:"
