@@ -1,21 +1,23 @@
 Test-Command: set -e
- ; cp -r more_itertools/tests "$AUTOPKGTEST_TMP"
+ ; cp -r setup.* README.rst docs/ more_itertools/tests "$AUTOPKGTEST_TMP"
  ; for py in $(pyversions -r 2>/dev/null)
  ; do cd "$AUTOPKGTEST_TMP"
  ; echo "Testing with $py:"
- ; $py -m nose 2>/dev/null
+ ; $py setup.py test
  ; done
 Depends: python-all,
          python-more-itertools,
-         python-nose
+         python-setuptools,
+Restrictions: allow-stderr
 
 Test-Command: set -e
- ; cp -r more_itertools/tests "$AUTOPKGTEST_TMP"
+ ; cp -r setup.* README.rst docs/ more_itertools/tests "$AUTOPKGTEST_TMP"
  ; for py in $(py3versions -r 2>/dev/null)
  ; do cd "$AUTOPKGTEST_TMP"
  ; echo "Testing with $py:"
- ; $py -m nose 2>/dev/null
+ ; $py setup.py test
  ; done
 Depends: python3-all,
          python3-more-itertools,
-         python3-nose
+         python3-setuptools,
+Restrictions: allow-stderr

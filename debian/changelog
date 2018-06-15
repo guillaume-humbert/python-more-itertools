@@ -1,6 +1,7 @@
 more-itertools (4.2.0-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Drop B-D on nose and use setuptools for tests
   * d/control: Set Vcs-* to salsa.debian.org
   * d/copyright: Use https protocol in Format field
 

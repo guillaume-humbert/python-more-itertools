@@ -4,7 +4,7 @@
 export PYBUILD_NAME=more-itertools
 
 %:
-	dh $@ --with python2,python3 --buildsystem=pybuild --test-nose
+	dh $@ --with python2,python3 --buildsystem=pybuild
 
 override_dh_installchangelogs:
 	dh_installchangelogs docs/versions.rst
