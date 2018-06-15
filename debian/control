@@ -24,7 +24,7 @@ Package: python-more-itertools
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 XB-Python-Version: ${python:Versions}
-Description: More routines for operating on iterables, beyond itertools. (Python 2)
+Description: library with for operating on iterables, beyond itertools. (Python 2)
  Python's itertools library is a gem - you can compose elegant solutions
  for a variety of problems with the functions it provides.
  More-itertools collects additional building blocks, recipes,
@@ -35,7 +35,7 @@ Description: More routines for operating on iterables, beyond itertools. (Python
 Package: python3-more-itertools
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}
-Description: More routines for operating on iterables, beyond itertools. (Python 3)
+Description: library with routines for operating on iterables, beyond itertools. (Python 3)
  Python's itertools library is a gem - you can compose elegant solutions
  for a variety of problems with the functions it provides.
  More-itertools collects additional building blocks, recipes,
