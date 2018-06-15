@@ -8,6 +8,7 @@ more-itertools (4.2.0-1) UNRELEASED; urgency=medium
     - Drop B-D on python{,3}-vcversioner - not needed
     - Bump Standards-Version to 4.1.4 (no changes)
   * d/copyright: Use https protocol in Format field
+  * Bump debhelper compat level to 11
 
  -- Ondřej Nový <onovy@debian.org>  Tue, 13 Feb 2018 10:14:06 +0100
 

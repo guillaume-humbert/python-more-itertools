@@ -3,7 +3,7 @@ Section: python
 Priority: optional
 Maintainer: Debian Python Modules Team <python-modules-team@lists.alioth.debian.org>
 Uploaders: Ethan Ward <ethan.ward@mycroft.ai>
-Build-Depends: debhelper (>= 10),
+Build-Depends: debhelper (>= 11),
                dh-python,
                python-all,
                python-setuptools,
