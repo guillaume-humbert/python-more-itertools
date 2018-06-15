@@ -1,5 +1,6 @@
-more-itertools (4.2.0-1) UNRELEASED; urgency=medium
+more-itertools (4.2.0-1) unstable; urgency=medium
 
+  * Team upload.
   * New upstream release
   * d/control:
     - Set Vcs-* to salsa.debian.org
@@ -11,7 +12,7 @@ more-itertools (4.2.0-1) UNRELEASED; urgency=medium
   * Bump debhelper compat level to 11
   * Add pypy version of package
 
- -- Ondřej Nový <onovy@debian.org>  Tue, 13 Feb 2018 10:14:06 +0100
+ -- Ondřej Nový <onovy@debian.org>  Fri, 15 Jun 2018 21:16:00 +0200
 
 more-itertools (3.2.0-2) unstable; urgency=medium
 
