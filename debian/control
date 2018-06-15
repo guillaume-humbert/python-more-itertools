@@ -9,12 +9,10 @@ Build-Depends: debhelper (>= 10),
                python-setuptools,
                python-six (<< 2.0.0),
                python-six (>= 1.0.0),
-               python-vcversioner,
                python3-all,
                python3-setuptools,
                python3-six (<< 2.0.0),
                python3-six (>= 1.0.0),
-               python3-vcversioner
 Standards-Version: 4.0.0
 Homepage: https://pypi.python.org/pypi/more-itertools/
 Vcs-Git: https://salsa.debian.org/python-team/modules/more-itertools.git
