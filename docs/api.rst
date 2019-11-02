@@ -14,13 +14,16 @@ These tools yield groups of items from a source iterable.
 **New itertools**
 
 .. autofunction:: chunked
+.. autofunction:: ichunked
 .. autofunction:: sliced
 .. autofunction:: distribute
 .. autofunction:: divide
 .. autofunction:: split_at
 .. autofunction:: split_before
 .. autofunction:: split_after
+.. autofunction:: split_into
 .. autofunction:: bucket
+.. autofunction:: unzip
 
 ----
 
@@ -55,6 +58,8 @@ These tools yield windows of items from an iterable.
 **New itertools**
 
 .. autofunction:: windowed
+.. autofunction:: substrings
+.. autofunction:: substrings_indexes
 .. autofunction:: stagger
 
 ----
@@ -124,9 +129,12 @@ These tools return summarized or aggregated data from an iterable.
 
 .. autofunction:: ilen
 .. autofunction:: first(iterable[, default])
-.. autofunction:: one
+.. autofunction:: last(iterable[, default])
+.. autofunction:: one(iterable, too_short=ValueError, too_long=ValueError)
+.. autofunction:: only(iterable, default=None, too_long=ValueError)
 .. autofunction:: unique_to_each
-.. autofunction:: locate(iterable, pred=bool)
+.. autofunction:: locate(iterable, pred=bool, window_size=None)
+.. autofunction:: rlocate(iterable, pred=bool, window_size=None)
 .. autofunction:: consecutive_groups(iterable, ordering=lambda x: x)
 .. autofunction:: exactly_n(iterable, n, predicate=bool)
 .. autoclass:: run_length
@@ -155,6 +163,8 @@ These tools yield certain items from an iterable.
 .. autofunction:: strip
 .. autofunction:: lstrip
 .. autofunction:: rstrip
+.. autofunction:: filter_except
+.. autofunction:: map_except
 
 ----
 
@@ -176,7 +186,10 @@ These tools yield combinatorial arrangements of items from iterables.
 **New itertools**
 
 .. autofunction:: distinct_permutations
+.. autofunction:: distinct_combinations
 .. autofunction:: circular_shifts
+.. autofunction:: partitions
+.. autofunction:: set_partitions
 
 ----
 
@@ -216,6 +229,7 @@ Others
 
 **New itertools**
 
+.. autofunction:: replace
 .. autofunction:: numeric_range(start, stop, step)
 .. autofunction:: always_reversible
 .. autofunction:: side_effect
@@ -223,12 +237,12 @@ Others
 .. autofunction:: difference(iterable, func=operator.sub)
 .. autofunction:: make_decorator
 .. autoclass:: SequenceView
+.. autofunction:: time_limited
 
 ----
 
 **Itertools recipes**
 
 .. autofunction:: consume
-.. autofunction:: accumulate(iterable, func=operator.add)
 .. autofunction:: tabulate
 .. autofunction:: repeatfunc

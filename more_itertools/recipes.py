@@ -7,18 +7,25 @@ Some backward-compatible usability improvements have been made.
 .. [1] http://docs.python.org/library/itertools.html#recipes
 
 """
+import warnings
 from collections import deque
 from itertools import (
-    chain, combinations, count, cycle, groupby, islice, repeat, starmap, tee
+    chain,
+    combinations,
+    count,
+    cycle,
+    filterfalse,
+    groupby,
+    islice,
+    repeat,
+    starmap,
+    tee,
+    zip_longest,
 )
 import operator
 from random import randrange, sample, choice
 
-from six import PY2
-from six.moves import filter, filterfalse, map, range, zip, zip_longest
-
 __all__ = [
-    'accumulate',
     'all_equal',
     'consume',
     'dotproduct',
@@ -47,36 +54,6 @@ __all__ = [
     'unique_everseen',
     'unique_justseen',
 ]
-
-
-def accumulate(iterable, func=operator.add):
-    """
-    Return an iterator whose items are the accumulated results of a function
-    (specified by the optional *func* argument) that takes two arguments.
-    By default, returns accumulated sums with :func:`operator.add`.
-
-        >>> list(accumulate([1, 2, 3, 4, 5]))  # Running sum
-        [1, 3, 6, 10, 15]
-        >>> list(accumulate([1, 2, 3], func=operator.mul))  # Running product
-        [1, 2, 6]
-        >>> list(accumulate([0, 1, -1, 2, 3, 2], func=max))  # Running maximum
-        [0, 1, 1, 2, 3, 3]
-
-    This function is available in the ``itertools`` module for Python 3.2 and
-    greater.
-
-    """
-    it = iter(iterable)
-    try:
-        total = next(it)
-    except StopIteration:
-        return
-    else:
-        yield total
-
-    for element in it:
-        total = func(total, element)
-        yield total
 
 
 def take(n, iterable):
@@ -285,13 +262,19 @@ def pairwise(iterable):
     return zip(a, b)
 
 
-def grouper(n, iterable, fillvalue=None):
+def grouper(iterable, n, fillvalue=None):
     """Collect data into fixed-length chunks or blocks.
 
-        >>> list(grouper(3, 'ABCDEFG', 'x'))
+        >>> list(grouper('ABCDEFG', 3, 'x'))
         [('A', 'B', 'C'), ('D', 'E', 'F'), ('G', 'x', 'x')]
 
     """
+    if isinstance(iterable, int):
+        warnings.warn(
+            "grouper expects iterable as first parameter",
+            DeprecationWarning,
+        )
+        n, iterable = iterable, n
     args = [iter(iterable)] * n
     return zip_longest(fillvalue=fillvalue, *args)
 
@@ -309,10 +292,7 @@ def roundrobin(*iterables):
     """
     # Recipe credited to George Sakkis
     pending = len(iterables)
-    if PY2:
-        nexts = cycle(iter(it).next for it in iterables)
-    else:
-        nexts = cycle(iter(it).__next__ for it in iterables)
+    nexts = cycle(iter(it).__next__ for it in iterables)
     while pending:
         try:
             for next in nexts:
@@ -343,8 +323,20 @@ def partition(pred, iterable):
 def powerset(iterable):
     """Yields all possible subsets of the iterable.
 
-        >>> list(powerset([1,2,3]))
+        >>> list(powerset([1, 2, 3]))
         [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
+
+    :func:`powerset` will operate on iterables that aren't :class:`set`
+    instances, so repeated elements in the input will produce repeated elements
+    in the output. Use :func:`unique_everseen` on the input to avoid generating
+    duplicates:
+
+        >>> seq = [1, 1, 0]
+        >>> list(powerset(seq))
+        [(), (1,), (1,), (0,), (1, 1), (1, 0), (1, 0), (1, 1, 0)]
+        >>> from more_itertools import unique_everseen
+        >>> list(powerset(unique_everseen(seq)))
+        [(), (1,), (0,), (1, 0)]
 
     """
     s = list(iterable)
@@ -362,6 +354,20 @@ def unique_everseen(iterable, key=None):
 
     Sequences with a mix of hashable and unhashable items can be used.
     The function will be slower (i.e., `O(n^2)`) for unhashable items.
+
+    Remember that ``list`` objects are unhashable - you can use the *key*
+    parameter to transform the list to a tuple (which is hashable) to
+    avoid a slowdown.
+
+        >>> iterable = ([1, 2], [2, 3], [1, 2])
+        >>> list(unique_everseen(iterable))  # Slow
+        [[1, 2], [2, 3]]
+        >>> list(unique_everseen(iterable, key=tuple))  # Faster
+        [[1, 2], [2, 3]]
+
+    Similary, you may want to convert unhashable ``set`` objects with
+    ``key=frozenset``. For ``dict`` objects,
+    ``key=lambda x: frozenset(x.items())`` can be used.
 
     """
     seenset = set()
@@ -424,7 +430,7 @@ def iter_except(func, exception, first=None):
         pass
 
 
-def first_true(iterable, default=False, pred=None):
+def first_true(iterable, default=None, pred=None):
     """
     Returns the first true value in the iterable.
 
