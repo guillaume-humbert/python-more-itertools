@@ -1,6 +1,6 @@
-Metadata-Version: 1.1
+Metadata-Version: 1.2
 Name: more-itertools
-Version: 4.2.0
+Version: 7.2.0
 Summary: More routines for operating on iterables, beyond itertools
 Home-page: https://github.com/erikrose/more-itertools
 Author: Erik Rose
@@ -17,6 +17,112 @@ Description: ==============
         for a variety of problems with the functions it provides. In ``more-itertools``
         we collect additional building blocks, recipes, and routines for working with
         Python iterables.
+        
+        ----
+        
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Grouping               | `chunked <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.chunked>`_,                                                                                                                        |
+        |                        | `ichunked <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.ichunked>`_,                                                                                                                      |
+        |                        | `sliced <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.sliced>`_,                                                                                                                          |
+        |                        | `distribute <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.distribute>`_,                                                                                                                  |
+        |                        | `divide <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.divide>`_,                                                                                                                          |
+        |                        | `split_at <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.split_at>`_,                                                                                                                      |
+        |                        | `split_before <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.split_before>`_,                                                                                                              |
+        |                        | `split_after <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.split_after>`_,                                                                                                                |
+        |                        | `split_into <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.split_into>`_,                                                                                                                  |
+        |                        | `bucket <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.bucket>`_,                                                                                                                          |
+        |                        | `unzip <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.unzip>`_,                                                                                                                            |
+        |                        | `grouper <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.grouper>`_,                                                                                                                        |
+        |                        | `partition <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.partition>`_                                                                                                                     |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Lookahead and lookback | `spy <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.spy>`_,                                                                                                                                |
+        |                        | `peekable <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.peekable>`_,                                                                                                                      |
+        |                        | `seekable <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.seekable>`_                                                                                                                       |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Windowing              | `windowed <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.windowed>`_,                                                                                                                      |
+        |                        | `substrings <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.substrings>`_,                                                                                                                  |
+        |                        | `substrings_indexes <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.substrings_indexes>`_,                                                                                                  |
+        |                        | `stagger <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.stagger>`_,                                                                                                                        |
+        |                        | `pairwise <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.pairwise>`_                                                                                                                       |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Augmenting             | `count_cycle <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.count_cycle>`_,                                                                                                                |
+        |                        | `intersperse <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.intersperse>`_,                                                                                                                |
+        |                        | `padded <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.padded>`_,                                                                                                                          |
+        |                        | `adjacent <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.adjacent>`_,                                                                                                                      |
+        |                        | `groupby_transform <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.groupby_transform>`_,                                                                                                    |
+        |                        | `padnone <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.padnone>`_,                                                                                                                        |
+        |                        | `ncycles <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.ncycles>`_                                                                                                                         |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Combining              | `collapse <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.collapse>`_,                                                                                                                      |
+        |                        | `sort_together <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.sort_together>`_,                                                                                                            |
+        |                        | `interleave <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.interleave>`_,                                                                                                                  |
+        |                        | `interleave_longest <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.interleave_longest>`_,                                                                                                  |
+        |                        | `collate <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.collate>`_,                                                                                                                        |
+        |                        | `zip_offset <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.zip_offset>`_,                                                                                                                  |
+        |                        | `dotproduct <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.dotproduct>`_,                                                                                                                  |
+        |                        | `flatten <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.flatten>`_,                                                                                                                        |
+        |                        | `roundrobin <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.roundrobin>`_,                                                                                                                  |
+        |                        | `prepend <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.prepend>`_                                                                                                                         |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Summarizing            | `ilen <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.ilen>`_,                                                                                                                              |
+        |                        | `first <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.first>`_,                                                                                                                            |
+        |                        | `last <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.last>`_,                                                                                                                              |
+        |                        | `one <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.one>`_,                                                                                                                                |
+        |                        | `only <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.only>`_,                                                                                                                              |
+        |                        | `unique_to_each <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.unique_to_each>`_,                                                                                                          |
+        |                        | `locate <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.locate>`_,                                                                                                                          |
+        |                        | `rlocate <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.rlocate>`_,                                                                                                                        |
+        |                        | `consecutive_groups <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.consecutive_groups>`_,                                                                                                  |
+        |                        | `exactly_n <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.exactly_n>`_,                                                                                                                    |
+        |                        | `run_length <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.run_length>`_,                                                                                                                  |
+        |                        | `map_reduce <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.map_reduce>`_,                                                                                                                  |
+        |                        | `all_equal <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.all_equal>`_,                                                                                                                    |
+        |                        | `first_true <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.first_true>`_,                                                                                                                  |
+        |                        | `nth <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.nth>`_,                                                                                                                                |
+        |                        | `quantify <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.quantify>`_                                                                                                                       |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Selecting              | `islice_extended <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.islice_extended>`_,                                                                                                        |
+        |                        | `strip <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.strip>`_,                                                                                                                            |
+        |                        | `lstrip <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.lstrip>`_,                                                                                                                          |
+        |                        | `rstrip <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.rstrip>`_,                                                                                                                          |
+        |                        | `take <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.take>`_,                                                                                                                              |
+        |                        | `tail <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.tail>`_,                                                                                                                              |
+        |                        | `unique_everseen <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertoo ls.unique_everseen>`_,                                                                                                       |
+        |                        | `unique_justseen <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.unique_justseen>`_                                                                                                         |
+        |                        | `filter_except <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.filter_except>`_                                                                                                             |
+        |                        | `map_except <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.map_except>`_                                                                                                                   |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Combinatorics          | `distinct_permutations <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.distinct_permutations>`_,                                                                                            |
+        |                        | `distinct_combinations <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.distinct_combinations>`_,                                                                                            |
+        |                        | `circular_shifts <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.circular_shifts>`_,                                                                                                        |
+        |                        | `partitions <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.partitions>`_,                                                                                                                  |
+        |                        | `set_partitions <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.set_partitions>`_,                                                                                                          |
+        |                        | `powerset <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.powerset>`_,                                                                                                                      |
+        |                        | `random_product <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.random_product>`_,                                                                                                          |
+        |                        | `random_permutation <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.random_permutation>`_,                                                                                                  |
+        |                        | `random_combination <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.random_combination>`_,                                                                                                  |
+        |                        | `random_combination_with_replacement <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.random_combination_with_replacement>`_,                                                                |
+        |                        | `nth_combination <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.nth_combination>`_                                                                                                         |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Wrapping               | `always_iterable <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.always_iterable>`_,                                                                                                        |
+        |                        | `consumer <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.consumer>`_,                                                                                                                      |
+        |                        | `with_iter <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.with_iter>`_,                                                                                                                    |
+        |                        | `iter_except <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.iter_except>`_                                                                                                                 |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        | Others                 | `replace <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.replace>`_,                                                                                                                        |
+        |                        | `numeric_range <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.numeric_range>`_,                                                                                                            |
+        |                        | `always_reversible <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.always_reversible>`_,                                                                                                    |
+        |                        | `side_effect <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.side_effect>`_,                                                                                                                |
+        |                        | `iterate <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.iterate>`_,                                                                                                                        |
+        |                        | `difference <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.difference>`_,                                                                                                                  |
+        |                        | `make_decorator <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.make_decorator>`_,                                                                                                          |
+        |                        | `SequenceView <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.SequenceView>`_,                                                                                                              |
+        |                        | `time_limited <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.time_limited>`_,                                                                                                              |
+        |                        | `consume <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.consume>`_,                                                                                                                        |
+        |                        | `tabulate <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.tabulate>`_,                                                                                                                      |
+        |                        | `repeatfunc <https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.repeatfunc>`_                                                                                                                   |
+        +------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        
         
         Getting started
         ===============
@@ -71,6 +177,121 @@ Description: ==============
         ===============
         
         
+           :noindex:
+        
+        7.2.0
+        -----
+        
+        * New itertools
+            * distinct_combinations
+            * set_partitions (thanks to kbarrett)
+            * filter_except
+            * map_except
+        
+        7.1.0
+        -----
+        
+        * New itertools
+            * ichunked (thanks davebelais and youtux)
+            * only (thanks jaraco)
+        
+        * Changes to existing itertools:
+            * numeric_range now supports ranges specified by
+              ``datetime.datetime`` and ``datetime.timedelta`` objects (thanks to MSeifert04 for tests).
+            * difference now supports an *initial* keyword argument.
+        
+        
+        * Other changes
+            * Various documentation fixes (thanks raimon49, pylang)
+        
+        7.0.0
+        -----
+        
+        * New itertools:
+            * time_limited
+            * partitions (thanks to rominf and Saluev)
+            * substrings_indexes (thanks to rominf)
+        
+        * Changes to existing itertools:
+            * collapse now treats ``bytes`` objects the same as ``str`` objects. (thanks to Sweenpet)
+        
+        The major version update is due to the change in the default behavior of
+        collapse. It now treats ``bytes`` objects the same as ``str`` objects.
+        This aligns its behavior with always_iterable.
+        
+        .. code-block:: python
+        
+            >>> from more_itertools import collapse
+            >>> iterable = [[1, 2], b'345', [6]]
+            >>> print(list(collapse(iterable)))
+            [1, 2, b'345', 6]
+        
+        6.0.0
+        -----
+        
+        * Major changes:
+            * Python 2.7 is no longer supported. The 5.0.0 release will be the last
+              version targeting Python 2.7.
+            * All future releases will target the active versions of Python 3.
+              As of 2019, those are Python 3.4 and above.
+            * The ``six`` library is no longer a dependency.
+            * The accumulate function is no longer part of this library. You
+              may import a better version from the standard ``itertools`` module.
+        
+        * Changes to existing itertools:
+            * The order of the parameters in grouper have changed to match
+              the latest recipe in the itertools documentation. Use of the old order
+              will be supported in this release, but emit a  ``DeprecationWarning``.
+              The legacy behavior will be dropped in a future release. (thanks to jaraco)
+            * distinct_permutations was improved (thanks to jferard - see also `permutations with unique values <https://stackoverflow.com/questions/6284396/permutations-with-unique-values>`_ at StackOverflow.)
+            * An unused parameter was removed from substrings. (thanks to pylang)
+        
+        * Other changes:
+            * The docs for unique_everseen were improved. (thanks to jferard and MSeifert04)
+            * Several Python 2-isms were removed. (thanks to jaraco, MSeifert04, and hugovk)
+        
+        5.0.0
+        -----
+        
+        * New itertools:
+            * split_into (thanks to rovyko)
+            * unzip (thanks to bmintz)
+            * substrings (thanks to pylang)
+        
+        * Changes to existing itertools:
+            * ilen was optimized a bit (thanks to MSeifert04, achampion, and  bmintz)
+            * first_true now returns ``None`` by default. This is the reason for the major version bump - see below. (thanks to sk and OJFord)
+        
+        * Other changes:
+           * Some code for old Python versions was removed (thanks to hugovk)
+           * Some documentation mistakes were corrected  (thanks to belm0 and hugovk)
+           * Tests now run properly on 32-bit versions of Python (thanks to Millak)
+           * Newer versions of CPython and PyPy are now tested against
+        
+        The major version update is due to the change in the default return value of
+        first_true. It's now ``None``.
+        
+        .. code-block:: python
+        
+            >>> from more_itertools import first_true
+            >>> iterable = [0, '', False, [], ()]  # All these are False
+            >>> answer = first_true(iterable)
+            >>> print(answer)
+            None
+        
+        4.3.0
+        -----
+        
+        * New itertools:
+            * last (thanks to tmshn)
+            * replace (thanks to pylang)
+            * rlocate (thanks to jferard and pylang)
+        
+        * Improvements to existing itertools:
+            * locate can now search for multiple items
+        
+        * Other changes:
+           * The docs now include a nice table of tools (thanks MSeifert04)
         
         4.2.0
         -----
@@ -309,13 +530,7 @@ Classifier: Development Status :: 5 - Production/Stable
 Classifier: Intended Audience :: Developers
 Classifier: Natural Language :: English
 Classifier: License :: OSI Approved :: MIT License
-Classifier: Programming Language :: Python :: 2
-Classifier: Programming Language :: Python :: 2.7
 Classifier: Programming Language :: Python :: 3
-Classifier: Programming Language :: Python :: 3.2
-Classifier: Programming Language :: Python :: 3.3
-Classifier: Programming Language :: Python :: 3.4
-Classifier: Programming Language :: Python :: 3.5
-Classifier: Programming Language :: Python :: 3.6
-Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3 :: Only
 Classifier: Topic :: Software Development :: Libraries
+Requires-Python: >=3.4

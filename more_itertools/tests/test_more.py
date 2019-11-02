@@ -1,5 +1,5 @@
-from __future__ import division, print_function, unicode_literals
-
+from collections import OrderedDict
+from datetime import datetime, timedelta
 from decimal import Decimal
 from doctest import DocTestSuite
 from fractions import Fraction
@@ -7,7 +7,9 @@ from functools import partial, reduce
 from heapq import merge
 from io import StringIO
 from itertools import (
+    accumulate,
     chain,
+    combinations,
     count,
     groupby,
     islice,
@@ -15,10 +17,10 @@ from itertools import (
     product,
     repeat,
 )
-from operator import add, mul, itemgetter
-from unittest import TestCase
-
-from six.moves import filter, map, range, zip
+from operator import add, mul, itemgetter, or_
+from sys import version_info
+from time import sleep
+from unittest import skipIf, TestCase
 
 import more_itertools as mi
 
@@ -112,6 +114,87 @@ class FirstTests(TestCase):
     def test_default(self):
         """It should return the provided default arg for empty iterables."""
         self.assertEqual(mi.first([], 'boo'), 'boo')
+
+
+class IterOnlyRange:
+    """User-defined iterable class which only support __iter__.
+
+    >>> r = IterOnlyRange(5)
+    >>> r[0]
+    AttributeError: IterOnlyRange instance has no attribute '__getitem__'
+
+    Note: In Python 3, ``TypeError`` will be raised because ``object`` is
+    inherited implicitly by default.
+
+    >>> r[0]
+    TypeError: 'IterOnlyRange' object does not support indexing
+    """
+    def __init__(self, n):
+        """Set the length of the range."""
+        self.n = n
+
+    def __iter__(self):
+        """Works same as range()."""
+        return iter(range(self.n))
+
+
+class LastTests(TestCase):
+    """Tests for ``last()``"""
+
+    def test_many_nonsliceable(self):
+        """Test that it works on many-item non-slice-able iterables."""
+        # Also try it on a generator expression to make sure it works on
+        # whatever those return, across Python versions.
+        self.assertEqual(mi.last(x for x in range(4)), 3)
+
+    def test_one_nonsliceable(self):
+        """Test that it doesn't raise StopIteration prematurely."""
+        self.assertEqual(mi.last(x for x in range(1)), 0)
+
+    def test_empty_stop_iteration_nonsliceable(self):
+        """It should raise ValueError for empty non-slice-able iterables."""
+        self.assertRaises(ValueError, lambda: mi.last(x for x in range(0)))
+
+    def test_default_nonsliceable(self):
+        """It should return the provided default arg for empty non-slice-able
+        iterables.
+        """
+        self.assertEqual(mi.last((x for x in range(0)), 'boo'), 'boo')
+
+    def test_many_sliceable(self):
+        """Test that it works on many-item slice-able iterables."""
+        self.assertEqual(mi.last([0, 1, 2, 3]), 3)
+
+    def test_one_sliceable(self):
+        """Test that it doesn't raise StopIteration prematurely."""
+        self.assertEqual(mi.last([3]), 3)
+
+    def test_empty_stop_iteration_sliceable(self):
+        """It should raise ValueError for empty slice-able iterables."""
+        self.assertRaises(ValueError, lambda: mi.last([]))
+
+    def test_default_sliceable(self):
+        """It should return the provided default arg for empty slice-able
+        iterables.
+        """
+        self.assertEqual(mi.last([], 'boo'), 'boo')
+
+    def test_dict(self):
+        """last(dic) and last(dic.keys()) should return same result."""
+        dic = {'a': 1, 'b': 2, 'c': 3}
+        self.assertEqual(mi.last(dic), mi.last(dic.keys()))
+
+    def test_ordereddict(self):
+        """last(dic) should return the last key."""
+        od = OrderedDict()
+        od['a'] = 1
+        od['b'] = 2
+        od['c'] = 3
+        self.assertEqual(mi.last(od), 'c')
+
+    def test_customrange(self):
+        """It should work on custom class where [] raises AttributeError."""
+        self.assertEqual(mi.last(IterOnlyRange(5)), 4)
 
 
 class PeekableTests(TestCase):
@@ -445,7 +528,7 @@ class WithIterTests(TestCase):
         # Iterable's items should be faithfully represented
         self.assertEqual(initial_words, ['One', 'Two'])
         # The file object should be closed
-        self.assertEqual(s.closed, True)
+        self.assertTrue(s.closed)
 
 
 class OneTests(TestCase):
@@ -598,6 +681,109 @@ class WindowedTests(TestCase):
             list(mi.windowed(iterable, 3, step=0))
 
 
+class SubstringsTests(TestCase):
+    def test_basic(self):
+        iterable = (x for x in range(4))
+        actual = list(mi.substrings(iterable))
+        expected = [
+            (0,),
+            (1,),
+            (2,),
+            (3,),
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (0, 1, 2),
+            (1, 2, 3),
+            (0, 1, 2, 3),
+        ]
+        self.assertEqual(actual, expected)
+
+    def test_strings(self):
+        iterable = 'abc'
+        actual = list(mi.substrings(iterable))
+        expected = [
+            ('a',), ('b',), ('c',), ('a', 'b'), ('b', 'c'), ('a', 'b', 'c')
+        ]
+        self.assertEqual(actual, expected)
+
+    def test_empty(self):
+        iterable = iter([])
+        actual = list(mi.substrings(iterable))
+        expected = []
+        self.assertEqual(actual, expected)
+
+    def test_order(self):
+        iterable = [2, 0, 1]
+        actual = list(mi.substrings(iterable))
+        expected = [(2,), (0,), (1,), (2, 0), (0, 1), (2, 0, 1)]
+        self.assertEqual(actual, expected)
+
+
+class SubstringsIndexesTests(TestCase):
+    def test_basic(self):
+        sequence = [x for x in range(4)]
+        actual = list(mi.substrings_indexes(sequence))
+        expected = [
+            ([0], 0, 1),
+            ([1], 1, 2),
+            ([2], 2, 3),
+            ([3], 3, 4),
+            ([0, 1], 0, 2),
+            ([1, 2], 1, 3),
+            ([2, 3], 2, 4),
+            ([0, 1, 2], 0, 3),
+            ([1, 2, 3], 1, 4),
+            ([0, 1, 2, 3], 0, 4),
+        ]
+        self.assertEqual(actual, expected)
+
+    def test_strings(self):
+        sequence = 'abc'
+        actual = list(mi.substrings_indexes(sequence))
+        expected = [
+            ('a', 0, 1),
+            ('b', 1, 2),
+            ('c', 2, 3),
+            ('ab', 0, 2),
+            ('bc', 1, 3),
+            ('abc', 0, 3),
+        ]
+        self.assertEqual(actual, expected)
+
+    def test_empty(self):
+        sequence = []
+        actual = list(mi.substrings_indexes(sequence))
+        expected = []
+        self.assertEqual(actual, expected)
+
+    def test_order(self):
+        sequence = [2, 0, 1]
+        actual = list(mi.substrings_indexes(sequence))
+        expected = [
+            ([2], 0, 1),
+            ([0], 1, 2),
+            ([1], 2, 3),
+            ([2, 0], 0, 2),
+            ([0, 1], 1, 3),
+            ([2, 0, 1], 0, 3),
+        ]
+        self.assertEqual(actual, expected)
+
+    def test_reverse(self):
+        sequence = [2, 0, 1]
+        actual = list(mi.substrings_indexes(sequence, reverse=True))
+        expected = [
+            ([2, 0, 1], 0, 3),
+            ([2, 0], 0, 2),
+            ([0, 1], 1, 3),
+            ([2], 0, 1),
+            ([0], 1, 2),
+            ([1], 2, 3),
+        ]
+        self.assertEqual(actual, expected)
+
+
 class BucketTests(TestCase):
     """Tests for ``bucket()``"""
 
@@ -618,10 +804,10 @@ class BucketTests(TestCase):
         iterable = [10, 20, 30, 11, 21, 31, 12, 22, 23, 33]
         D = mi.bucket(iterable, key=lambda x: 10 * (x // 10))
 
-        self.assertTrue(10 in D)
-        self.assertFalse(40 in D)
-        self.assertTrue(20 in D)
-        self.assertFalse(21 in D)
+        self.assertIn(10, D)
+        self.assertNotIn(40, D)
+        self.assertIn(20, D)
+        self.assertNotIn(21, D)
 
         # Checking in-ness shouldn't advance the iterator
         self.assertEqual(next(D[10]), 10)
@@ -722,6 +908,12 @@ class TestCollapse(TestCase):
         l = [["s1"], "s2", [["s3"], "s4"], [[["s5"]]]]
         self.assertEqual(list(mi.collapse(l)), ["s1", "s2", "s3", "s4", "s5"])
 
+    def test_collapse_to_bytes(self):
+        l = [[b"s1"], b"s2", [[b"s3"], b"s4"], [[[b"s5"]]]]
+        self.assertEqual(
+            list(mi.collapse(l)), [b"s1", b"s2", b"s3", b"s4", b"s5"]
+        )
+
     def test_collapse_flatten(self):
         l = [[1], [2], [[3], 4], [[[5]]]]
         self.assertEqual(list(mi.collapse(l, levels=1)), list(mi.flatten(l)))
@@ -775,8 +967,8 @@ class SideEffectTests(TestCase):
             collector.append(f.getvalue())
 
         def it():
-            yield u'a'
-            yield u'b'
+            yield 'a'
+            yield 'b'
             raise RuntimeError('kaboom')
 
         before = lambda: print('HEADER', file=f)
@@ -788,7 +980,7 @@ class SideEffectTests(TestCase):
             pass
 
         # The iterable should have been written to the file
-        self.assertEqual(collector, [u'HEADER\na\n', u'HEADER\na\nb\n'])
+        self.assertEqual(collector, ['HEADER\na\n', 'HEADER\na\nb\n'])
 
         # The file should be closed even though something bad happened
         self.assertTrue(f.closed)
@@ -802,7 +994,7 @@ class SideEffectTests(TestCase):
 
         try:
             mi.consume(
-                mi.side_effect(func, u'abc', before=before, after=f.close)
+                mi.side_effect(func, 'abc', before=before, after=f.close)
             )
         except RuntimeError:
             pass
@@ -883,6 +1075,165 @@ class SplitAfterTest(TestCase):
         actual = list(mi.split_after('ooo', lambda c: c == 'x'))
         expected = [['o', 'o', 'o']]
         self.assertEqual(actual, expected)
+
+
+class SplitIntoTests(TestCase):
+    """Tests for ``split_into()``"""
+
+    def test_iterable_just_right(self):
+        """Size of ``iterable`` equals the sum of ``sizes``."""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = [2, 3, 4]
+        expected = [[1, 2], [3, 4, 5], [6, 7, 8, 9]]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_iterable_too_small(self):
+        """Size of ``iterable`` is smaller than sum of ``sizes``. Last return
+        list is shorter as a result."""
+        iterable = [1, 2, 3, 4, 5, 6, 7]
+        sizes = [2, 3, 4]
+        expected = [[1, 2], [3, 4, 5], [6, 7]]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_iterable_too_small_extra(self):
+        """Size of ``iterable`` is smaller than sum of ``sizes``. Second last
+        return list is shorter and last return list is empty as a result."""
+        iterable = [1, 2, 3, 4, 5, 6, 7]
+        sizes = [2, 3, 4, 5]
+        expected = [[1, 2], [3, 4, 5], [6, 7], []]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_iterable_too_large(self):
+        """Size of ``iterable`` is larger than sum of ``sizes``. Not all
+        items of iterable are returned."""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = [2, 3, 2]
+        expected = [[1, 2], [3, 4, 5], [6, 7]]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_using_none_with_leftover(self):
+        """Last item of ``sizes`` is None when items still remain in
+        ``iterable``. Last list returned stretches to fit all remaining items
+        of ``iterable``."""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = [2, 3, None]
+        expected = [[1, 2], [3, 4, 5], [6, 7, 8, 9]]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_using_none_without_leftover(self):
+        """Last item of ``sizes`` is None when no items remain in
+        ``iterable``. Last list returned is empty."""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = [2, 3, 4, None]
+        expected = [[1, 2], [3, 4, 5], [6, 7, 8, 9], []]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_using_none_mid_sizes(self):
+        """None is present in ``sizes`` but is not the last item. Last list
+        returned stretches to fit all remaining items of ``iterable`` but
+        all items in ``sizes`` after None are ignored."""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = [2, 3, None, 4]
+        expected = [[1, 2], [3, 4, 5], [6, 7, 8, 9]]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_iterable_empty(self):
+        """``iterable`` argument is empty but ``sizes`` is not. An empty
+        list is returned for each item in ``sizes``."""
+        iterable = []
+        sizes = [2, 4, 2]
+        expected = [[], [], []]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_iterable_empty_using_none(self):
+        """``iterable`` argument is empty but ``sizes`` is not. An empty
+        list is returned for each item in ``sizes`` that is not after a
+        None item."""
+        iterable = []
+        sizes = [2, 4, None, 2]
+        expected = [[], [], []]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_sizes_empty(self):
+        """``sizes`` argument is empty but ``iterable`` is not. An empty
+        generator is returned."""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = []
+        expected = []
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_both_empty(self):
+        """Both ``sizes`` and ``iterable`` arguments are empty. An empty
+        generator is returned."""
+        iterable = []
+        sizes = []
+        expected = []
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_bool_in_sizes(self):
+        """A bool object is present in ``sizes`` is treated as a 1 or 0 for
+        ``True`` or ``False`` due to bool being an instance of int."""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = [3, True, 2, False]
+        expected = [[1, 2, 3], [4], [5, 6], []]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_invalid_in_sizes(self):
+        """A ValueError is raised if an object in ``sizes`` is neither ``None``
+        or an integer."""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = [1, [], 3]
+        with self.assertRaises(ValueError):
+            list(mi.split_into(iterable, sizes))
+
+    def test_invalid_in_sizes_after_none(self):
+        """A item in ``sizes`` that is invalid will not raise a TypeError if it
+        comes after a ``None`` item."""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = [3, 4, None, []]
+        expected = [[1, 2, 3], [4, 5, 6, 7], [8, 9]]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+    def test_generator_iterable_integrity(self):
+        """Check that if ``iterable`` is an iterator, it is consumed only by as
+        many items as the sum of ``sizes``."""
+        iterable = (i for i in range(10))
+        sizes = [2, 3]
+
+        expected = [[0, 1], [2, 3, 4]]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+        iterable_expected = [5, 6, 7, 8, 9]
+        iterable_actual = list(iterable)
+        self.assertEqual(iterable_actual, iterable_expected)
+
+    def test_generator_sizes_integrity(self):
+        """Check that if ``sizes`` is an iterator, it is consumed only until a
+        ``None`` item is reached"""
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        sizes = (i for i in [1, 2, None, 3, 4])
+
+        expected = [[1], [2, 3], [4, 5, 6, 7, 8, 9]]
+        actual = list(mi.split_into(iterable, sizes))
+        self.assertEqual(actual, expected)
+
+        sizes_expected = [3, 4]
+        sizes_actual = list(sizes)
+        self.assertEqual(sizes_actual, sizes_expected)
 
 
 class PaddedTest(TestCase):
@@ -1055,6 +1406,47 @@ class ZipOffsetTest(TestCase):
         )
 
 
+class UnzipTests(TestCase):
+    """Tests for unzip()"""
+
+    def test_empty_iterable(self):
+        self.assertEqual(list(mi.unzip([])), [])
+        # in reality zip([], [], []) is equivalent to iter([])
+        # but it doesn't hurt to test both
+        self.assertEqual(list(mi.unzip(zip([], [], []))), [])
+
+    def test_length_one_iterable(self):
+        xs, ys, zs = mi.unzip(zip([1], [2], [3]))
+        self.assertEqual(list(xs), [1])
+        self.assertEqual(list(ys), [2])
+        self.assertEqual(list(zs), [3])
+
+    def test_normal_case(self):
+        xs, ys, zs = range(10), range(1, 11), range(2, 12)
+        zipped = zip(xs, ys, zs)
+        xs, ys, zs = mi.unzip(zipped)
+        self.assertEqual(list(xs), list(range(10)))
+        self.assertEqual(list(ys), list(range(1, 11)))
+        self.assertEqual(list(zs), list(range(2, 12)))
+
+    def test_improperly_zipped(self):
+        zipped = iter([(1, 2, 3), (4, 5), (6,)])
+        xs, ys, zs = mi.unzip(zipped)
+        self.assertEqual(list(xs), [1, 4, 6])
+        self.assertEqual(list(ys), [2, 5])
+        self.assertEqual(list(zs), [3])
+
+    def test_increasingly_zipped(self):
+        zipped = iter([(1, 2), (3, 4, 5), (6, 7, 8, 9)])
+        unzipped = mi.unzip(zipped)
+        # from the docstring:
+        # len(first tuple) is the number of iterables zipped
+        self.assertEqual(len(unzipped), 2)
+        xs, ys = unzipped
+        self.assertEqual(list(xs), [1, 3, 6])
+        self.assertEqual(list(ys), [2, 4, 7])
+
+
 class SortTogetherTest(TestCase):
     """Tests for sort_together()"""
 
@@ -1179,7 +1571,7 @@ class TestAlwaysIterable(TestCase):
         self.assertEqual(list(mi.always_iterable(1)), [1])
 
     def test_strings(self):
-        for obj in ['foo', b'bar', u'baz']:
+        for obj in ['foo', b'bar', 'baz']:
             actual = list(mi.always_iterable(obj))
             expected = [obj]
             self.assertEqual(actual, expected)
@@ -1402,6 +1794,18 @@ class NumericRangeTests(TestCase):
             ((1.0, 0.0), []),
             ((Fraction(2, 1),), [Fraction(0, 1), Fraction(1, 1)]),
             ((Decimal('2.0'),), [Decimal('0.0'), Decimal('1.0')]),
+            (
+                (
+                    datetime(2019, 3, 29, 12, 34, 56),
+                    datetime(2019, 3, 29, 12, 37, 55),
+                    timedelta(minutes=1)
+                ),
+                [
+                    datetime(2019, 3, 29, 12, 34, 56),
+                    datetime(2019, 3, 29, 12, 35, 56),
+                    datetime(2019, 3, 29, 12, 36, 56),
+                ]
+            ),
         ]:
             actual = list(mi.numeric_range(*args))
             self.assertEqual(actual, expected)
@@ -1416,9 +1820,16 @@ class NumericRangeTests(TestCase):
         )
 
     def test_zero_step(self):
-        self.assertRaises(
-            ValueError, lambda: list(mi.numeric_range(1, 2, 0))
-        )
+        for args in [
+            (1, 2, 0),
+            (
+                datetime(2019, 3, 29, 12, 34, 56),
+                datetime(2019, 3, 29, 12, 37, 55),
+                timedelta(minutes=0)
+            ),
+        ]:
+            with self.assertRaises(ValueError):
+                list(mi.numeric_range(*args))
 
 
 class CountCycleTests(TestCase):
@@ -1461,6 +1872,26 @@ class LocateTests(TestCase):
         actual = list(mi.locate(iterable, pred))
         expected = [0, 3, 5, 6]
         self.assertEqual(actual, expected)
+
+    def test_window_size(self):
+        iterable = ['0', 1, 1, '0', 1, '0', '0']
+        pred = lambda *args: args == ('0', 1)
+        actual = list(mi.locate(iterable, pred, window_size=2))
+        expected = [0, 3]
+        self.assertEqual(actual, expected)
+
+    def test_window_size_large(self):
+        iterable = [1, 2, 3, 4]
+        pred = lambda a, b, c, d, e: True
+        actual = list(mi.locate(iterable, pred, window_size=5))
+        expected = [0]
+        self.assertEqual(actual, expected)
+
+    def test_window_size_zero(self):
+        iterable = [1, 2, 3, 4]
+        pred = lambda: True
+        with self.assertRaises(ValueError):
+            list(mi.locate(iterable, pred, window_size=0))
 
 
 class StripFunctionTests(TestCase):
@@ -1558,7 +1989,7 @@ class DifferenceTest(TestCase):
 
     def test_roundtrip(self):
         original = list(range(100))
-        accumulated = mi.accumulate(original)
+        accumulated = accumulate(original)
         actual = list(mi.difference(accumulated))
         self.assertEqual(actual, original)
 
@@ -1567,6 +1998,13 @@ class DifferenceTest(TestCase):
 
     def test_empty(self):
         self.assertEqual(list(mi.difference([])), [])
+
+    @skipIf(version_info[:2] < (3, 8), 'accumulate with initial needs 3.8+')
+    def test_initial(self):
+        original = list(range(100))
+        accumulated = accumulate(original, initial=100)
+        actual = list(mi.difference(accumulated, initial=100))
+        self.assertEqual(actual, original)
 
 
 class SeekableTest(TestCase):
@@ -1846,3 +2284,416 @@ class MapReduceTests(TestCase):
         d = mi.map_reduce([1, 0, 2, 0, 1, 0], bool)
         self.assertEqual(d, {False: [0, 0, 0], True: [1, 2, 1]})
         self.assertRaises(KeyError, lambda: d[None].append(1))
+
+
+class RlocateTests(TestCase):
+    def test_default_pred(self):
+        iterable = [0, 1, 1, 0, 1, 0, 0]
+        for it in (iterable[:], iter(iterable)):
+            actual = list(mi.rlocate(it))
+            expected = [4, 2, 1]
+            self.assertEqual(actual, expected)
+
+    def test_no_matches(self):
+        iterable = [0, 0, 0]
+        for it in (iterable[:], iter(iterable)):
+            actual = list(mi.rlocate(it))
+            expected = []
+            self.assertEqual(actual, expected)
+
+    def test_custom_pred(self):
+        iterable = ['0', 1, 1, '0', 1, '0', '0']
+        pred = lambda x: x == '0'
+        for it in (iterable[:], iter(iterable)):
+            actual = list(mi.rlocate(it, pred))
+            expected = [6, 5, 3, 0]
+            self.assertEqual(actual, expected)
+
+    def test_efficient_reversal(self):
+        iterable = range(9 ** 9)  # Is efficiently reversible
+        target = 9 ** 9 - 2
+        pred = lambda x: x == target  # Find-able from the right
+        actual = next(mi.rlocate(iterable, pred))
+        self.assertEqual(actual, target)
+
+    def test_window_size(self):
+        iterable = ['0', 1, 1, '0', 1, '0', '0']
+        pred = lambda *args: args == ('0', 1)
+        for it in (iterable, iter(iterable)):
+            actual = list(mi.rlocate(it, pred, window_size=2))
+            expected = [3, 0]
+            self.assertEqual(actual, expected)
+
+    def test_window_size_large(self):
+        iterable = [1, 2, 3, 4]
+        pred = lambda a, b, c, d, e: True
+        for it in (iterable, iter(iterable)):
+            actual = list(mi.rlocate(iterable, pred, window_size=5))
+            expected = [0]
+            self.assertEqual(actual, expected)
+
+    def test_window_size_zero(self):
+        iterable = [1, 2, 3, 4]
+        pred = lambda: True
+        for it in (iterable, iter(iterable)):
+            with self.assertRaises(ValueError):
+                list(mi.locate(iterable, pred, window_size=0))
+
+
+class ReplaceTests(TestCase):
+    def test_basic(self):
+        iterable = range(10)
+        pred = lambda x: x % 2 == 0
+        substitutes = []
+        actual = list(mi.replace(iterable, pred, substitutes))
+        expected = [1, 3, 5, 7, 9]
+        self.assertEqual(actual, expected)
+
+    def test_count(self):
+        iterable = range(10)
+        pred = lambda x: x % 2 == 0
+        substitutes = []
+        actual = list(mi.replace(iterable, pred, substitutes, count=4))
+        expected = [1, 3, 5, 7, 8, 9]
+        self.assertEqual(actual, expected)
+
+    def test_window_size(self):
+        iterable = range(10)
+        pred = lambda *args: args == (0, 1, 2)
+        substitutes = []
+        actual = list(mi.replace(iterable, pred, substitutes, window_size=3))
+        expected = [3, 4, 5, 6, 7, 8, 9]
+        self.assertEqual(actual, expected)
+
+    def test_window_size_end(self):
+        iterable = range(10)
+        pred = lambda *args: args == (7, 8, 9)
+        substitutes = []
+        actual = list(mi.replace(iterable, pred, substitutes, window_size=3))
+        expected = [0, 1, 2, 3, 4, 5, 6]
+        self.assertEqual(actual, expected)
+
+    def test_window_size_count(self):
+        iterable = range(10)
+        pred = lambda *args: (args == (0, 1, 2)) or (args == (7, 8, 9))
+        substitutes = []
+        actual = list(
+            mi.replace(iterable, pred, substitutes, count=1, window_size=3)
+        )
+        expected = [3, 4, 5, 6, 7, 8, 9]
+        self.assertEqual(actual, expected)
+
+    def test_window_size_large(self):
+        iterable = range(4)
+        pred = lambda a, b, c, d, e: True
+        substitutes = [5, 6, 7]
+        actual = list(mi.replace(iterable, pred, substitutes, window_size=5))
+        expected = [5, 6, 7]
+        self.assertEqual(actual, expected)
+
+    def test_window_size_zero(self):
+        iterable = range(10)
+        pred = lambda *args: True
+        substitutes = []
+        with self.assertRaises(ValueError):
+            list(mi.replace(iterable, pred, substitutes, window_size=0))
+
+    def test_iterable_substitutes(self):
+        iterable = range(5)
+        pred = lambda x: x % 2 == 0
+        substitutes = iter('__')
+        actual = list(mi.replace(iterable, pred, substitutes))
+        expected = ['_', '_', 1, '_', '_', 3, '_', '_']
+        self.assertEqual(actual, expected)
+
+
+class PartitionsTest(TestCase):
+    def test_types(self):
+        for iterable in [
+            'abcd',
+            ['a', 'b', 'c', 'd'],
+            ('a', 'b', 'c', 'd'),
+        ]:
+            with self.subTest(iterable=iterable):
+                actual = list(mi.partitions(iterable))
+                expected = [
+                    [['a', 'b', 'c', 'd']],
+                    [['a'], ['b', 'c', 'd']],
+                    [['a', 'b'], ['c', 'd']],
+                    [['a', 'b', 'c'], ['d']],
+                    [['a'], ['b'], ['c', 'd']],
+                    [['a'], ['b', 'c'], ['d']],
+                    [['a', 'b'], ['c'], ['d']],
+                    [['a'], ['b'], ['c'], ['d']]
+                ]
+                self.assertEqual(actual, expected)
+
+    def test_empty(self):
+        iterable = []
+        actual = list(mi.partitions(iterable))
+        expected = [[[]]]
+        self.assertEqual(actual, expected)
+
+    def test_order(self):
+        iterable = iter([3, 2, 1])
+        actual = list(mi.partitions(iterable))
+        expected = [
+            [[3, 2, 1]],
+            [[3], [2, 1]],
+            [[3, 2], [1]],
+            [[3], [2], [1]],
+        ]
+        self.assertEqual(actual, expected)
+
+    def test_duplicates(self):
+        iterable = [1, 1, 1]
+        actual = list(mi.partitions(iterable))
+        expected = [
+            [[1, 1, 1]],
+            [[1], [1, 1]],
+            [[1, 1], [1]],
+            [[1], [1], [1]],
+        ]
+        self.assertEqual(actual, expected)
+
+
+class SetPartitionsTests(TestCase):
+    def test_repeated(self):
+        it = 'aaa'
+        actual = []
+        for part in mi.set_partitions(it, 2):
+            actual.append([''.join(p) for p in part])
+        expected = [['a', 'aa'], ['a', 'aa'], ['a', 'aa']]
+        self.assertEqual(actual, expected)
+
+    def test_each_correct(self):
+        a = frozenset(range(6))
+        for soln in mi.set_partitions(a):
+            soln = frozenset(frozenset(part) for part in soln)
+            total = reduce(or_, soln)
+            self.assertEqual(a, total)
+
+    def test_duplicates(self):
+        a = list(range(6))  # unique values so set comparision will work
+        solns = list(mi.set_partitions(a))
+        unique_solns = frozenset(
+            frozenset(
+                frozenset(part) for part in soln)
+            for soln in solns)
+        self.assertEqual(len(solns), len(unique_solns))
+
+    def test_lexical_order(self):
+        def less(solnA, solnB):
+            """lexically orders solutions"""
+            if len(solnA) == len(solnB):
+                for partA, partB in zip(solnA, solnB):
+                    if len(partA) == len(partB):
+                        if partA == partB:
+                            continue
+                        else:
+                            return partA < partB
+                    else:
+                        return len(partA) < len(partB)
+            else:
+                return len(solnA) < len(solnB)
+        for curr, nxt in mi.windowed(mi.set_partitions(range(6)), 2):
+            self.assertTrue(less(curr, nxt))
+
+    def test_found_all(self):
+        """small example, hand-checked"""
+        expected = [((0,), (1,), (2, 3, 4)),
+                    ((0,), (2,), (1, 3, 4)),
+                    ((0,), (3,), (1, 2, 4)),
+                    ((0,), (4,), (1, 2, 3)),
+                    ((0,), (1, 2), (3, 4)),
+                    ((0,), (1, 3), (2, 4)),
+                    ((0,), (1, 4), (2, 3)),
+                    ((1,), (2,), (0, 3, 4)),
+                    ((1,), (3,), (0, 2, 4)),
+                    ((1,), (4,), (0, 2, 3)),
+                    ((1,), (0, 2), (3, 4)),
+                    ((1,), (0, 3), (2, 4)),
+                    ((1,), (0, 4), (2, 3)),
+                    ((2,), (3,), (0, 1, 4)),
+                    ((2,), (4,), (0, 1, 3)),
+                    ((2,), (0, 1), (3, 4)),
+                    ((2,), (0, 3), (1, 4)),
+                    ((2,), (0, 4), (1, 3)),
+                    ((3,), (4,), (0, 1, 2)),
+                    ((3,), (0, 1), (2, 4)),
+                    ((3,), (0, 2), (1, 4)),
+                    ((3,), (0, 4), (1, 2)),
+                    ((4,), (0, 1), (2, 3)),
+                    ((4,), (0, 2), (1, 3)),
+                    ((4,), (0, 3), (1, 2))]
+        actual = list(mi.set_partitions(range(5), 3))
+        for e, a in zip(expected, actual):
+            self.assertEqual(e, a)
+
+
+class TimeLimitedTests(TestCase):
+    def test_basic(self):
+        def generator():
+            yield 1
+            yield 2
+            sleep(0.2)
+            yield 3
+
+        iterable = generator()
+        actual = list(mi.time_limited(0.1, iterable))
+        expected = [1, 2]
+        self.assertEqual(actual, expected)
+
+    def test_zero_limit(self):
+        iterable = count()
+        actual = list(mi.time_limited(0, iterable))
+        expected = []
+        self.assertEqual(actual, expected)
+
+    def test_invalid_limit(self):
+        with self.assertRaises(ValueError):
+            list(mi.time_limited(-0.1, count()))
+
+
+class OnlyTests(TestCase):
+    def test_defaults(self):
+        self.assertEqual(mi.only([]), None)
+        self.assertEqual(mi.only([1]), 1)
+        self.assertRaises(ValueError, lambda: mi.only([1, 2]))
+
+    def test_custom_value(self):
+        self.assertEqual(mi.only([], default='!'), '!')
+        self.assertEqual(mi.only([1], default='!'), 1)
+        self.assertRaises(ValueError, lambda: mi.only([1, 2], default='!'))
+
+    def test_custom_exception(self):
+        self.assertEqual(mi.only([], too_long=RuntimeError), None)
+        self.assertEqual(mi.only([1], too_long=RuntimeError), 1)
+        self.assertRaises(
+            RuntimeError, lambda: mi.only([1, 2], too_long=RuntimeError)
+        )
+
+
+class IchunkedTests(TestCase):
+    def test_even(self):
+        iterable = (str(x) for x in range(10))
+        actual = [''.join(c) for c in mi.ichunked(iterable, 5)]
+        expected = ['01234', '56789']
+        self.assertEqual(actual, expected)
+
+    def test_odd(self):
+        iterable = (str(x) for x in range(10))
+        actual = [''.join(c) for c in mi.ichunked(iterable, 4)]
+        expected = ['0123', '4567', '89']
+        self.assertEqual(actual, expected)
+
+    def test_zero(self):
+        iterable = []
+        actual = [list(c) for c in mi.ichunked(iterable, 0)]
+        expected = []
+        self.assertEqual(actual, expected)
+
+    def test_negative(self):
+        iterable = count()
+        with self.assertRaises(ValueError):
+            [list(c) for c in mi.ichunked(iterable, -1)]
+
+    def test_out_of_order(self):
+        iterable = map(str, count())
+        it = mi.ichunked(iterable, 4)
+        chunk_1 = next(it)
+        chunk_2 = next(it)
+        self.assertEqual(''.join(chunk_2), '4567')
+        self.assertEqual(''.join(chunk_1), '0123')
+
+    def test_laziness(self):
+        def gen():
+            yield 0
+            raise RuntimeError
+            yield from count(1)
+
+        it = mi.ichunked(gen(), 4)
+        chunk = next(it)
+        self.assertEqual(next(chunk), 0)
+        self.assertRaises(RuntimeError, next, it)
+
+
+class DistinctCombinationsTests(TestCase):
+    def test_basic(self):
+        iterable = (1, 2, 2, 3, 3, 3)
+        for r in range(len(iterable)):
+            with self.subTest(r=r):
+                actual = sorted(mi.distinct_combinations(iterable, r))
+                expected = sorted(set(combinations(iterable, r)))
+                self.assertEqual(actual, expected)
+
+    def test_distinct(self):
+        iterable = list(range(6))
+        for r in range(len(iterable)):
+            with self.subTest(r=r):
+                actual = list(mi.distinct_combinations(iterable, r))
+                expected = list(combinations(iterable, r))
+                self.assertEqual(actual, expected)
+
+    def test_negative(self):
+        with self.assertRaises(ValueError):
+            list(mi.distinct_combinations([], -1))
+
+    def test_empty(self):
+        self.assertEqual(list(mi.distinct_combinations([], 2)), [])
+
+
+class FilterExceptTests(TestCase):
+    def test_no_exceptions_pass(self):
+        iterable = '0123'
+        actual = list(mi.filter_except(int, iterable))
+        expected = ['0', '1', '2', '3']
+        self.assertEqual(actual, expected)
+
+    def test_no_exceptions_raise(self):
+        iterable = ['0', '1', 'two', '3']
+        with self.assertRaises(ValueError):
+            list(mi.filter_except(int, iterable))
+
+    def test_raise(self):
+        iterable = ['0', '1' '2', 'three', None]
+        with self.assertRaises(TypeError):
+            list(mi.filter_except(int, iterable, ValueError))
+
+    def test_false(self):
+        # Even if the validator returns false, we pass through
+        validator = lambda x: False
+        iterable = ['0', '1', '2', 'three', None]
+        actual = list(mi.filter_except(validator, iterable, Exception))
+        expected = ['0', '1', '2', 'three', None]
+        self.assertEqual(actual, expected)
+
+    def test_multiple(self):
+        iterable = ['0', '1', '2', 'three', None, '4']
+        actual = list(mi.filter_except(int, iterable, ValueError, TypeError))
+        expected = ['0', '1', '2', '4']
+        self.assertEqual(actual, expected)
+
+
+class MapExceptTests(TestCase):
+    def test_no_exceptions_pass(self):
+        iterable = '0123'
+        actual = list(mi.map_except(int, iterable))
+        expected = [0, 1, 2, 3]
+        self.assertEqual(actual, expected)
+
+    def test_no_exceptions_raise(self):
+        iterable = ['0', '1', 'two', '3']
+        with self.assertRaises(ValueError):
+            list(mi.map_except(int, iterable))
+
+    def test_raise(self):
+        iterable = ['0', '1' '2', 'three', None]
+        with self.assertRaises(TypeError):
+            list(mi.map_except(int, iterable, ValueError))
+
+    def test_multiple(self):
+        iterable = ['0', '1', '2', 'three', None, '4']
+        actual = list(mi.map_except(int, iterable, ValueError, TypeError))
+        expected = [0, 1, 2, 4]
+        self.assertEqual(actual, expected)

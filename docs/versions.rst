@@ -3,6 +3,121 @@ Version History
 ===============
 
 .. automodule:: more_itertools
+   :noindex:
+
+7.2.0
+-----
+
+* New itertools
+    * :func:`distinct_combinations`
+    * :func:`set_partitions` (thanks to kbarrett)
+    * :func:`filter_except`
+    * :func:`map_except`
+
+7.1.0
+-----
+
+* New itertools
+    * :func:`ichunked` (thanks davebelais and youtux)
+    * :func:`only` (thanks jaraco)
+
+* Changes to existing itertools:
+    * :func:`numeric_range` now supports ranges specified by
+      ``datetime.datetime`` and ``datetime.timedelta`` objects (thanks to MSeifert04 for tests).
+    * :func:`difference` now supports an *initial* keyword argument.
+
+
+* Other changes
+    * Various documentation fixes (thanks raimon49, pylang)
+
+7.0.0
+-----
+
+* New itertools:
+    * :func:`time_limited`
+    * :func:`partitions` (thanks to rominf and Saluev)
+    * :func:`substrings_indexes` (thanks to rominf)
+
+* Changes to existing itertools:
+    * :func:`collapse` now treats ``bytes`` objects the same as ``str`` objects. (thanks to Sweenpet)
+
+The major version update is due to the change in the default behavior of
+:func:`collapse`. It now treats ``bytes`` objects the same as ``str`` objects.
+This aligns its behavior with :func:`always_iterable`.
+
+.. code-block:: python
+
+    >>> from more_itertools import collapse
+    >>> iterable = [[1, 2], b'345', [6]]
+    >>> print(list(collapse(iterable)))
+    [1, 2, b'345', 6]
+
+6.0.0
+-----
+
+* Major changes:
+    * Python 2.7 is no longer supported. The 5.0.0 release will be the last
+      version targeting Python 2.7.
+    * All future releases will target the active versions of Python 3.
+      As of 2019, those are Python 3.4 and above.
+    * The ``six`` library is no longer a dependency.
+    * The :func:`accumulate` function is no longer part of this library. You
+      may import a better version from the standard ``itertools`` module.
+
+* Changes to existing itertools:
+    * The order of the parameters in :func:`grouper` have changed to match
+      the latest recipe in the itertools documentation. Use of the old order
+      will be supported in this release, but emit a  ``DeprecationWarning``.
+      The legacy behavior will be dropped in a future release. (thanks to jaraco)
+    * :func:`distinct_permutations` was improved (thanks to jferard - see also `permutations with unique values <https://stackoverflow.com/questions/6284396/permutations-with-unique-values>`_ at StackOverflow.)
+    * An unused parameter was removed from :func:`substrings`. (thanks to pylang)
+
+* Other changes:
+    * The docs for :func:`unique_everseen` were improved. (thanks to jferard and MSeifert04)
+    * Several Python 2-isms were removed. (thanks to jaraco, MSeifert04, and hugovk)
+
+5.0.0
+-----
+
+* New itertools:
+    * :func:`split_into` (thanks to rovyko)
+    * :func:`unzip` (thanks to bmintz)
+    * :func:`substrings` (thanks to pylang)
+
+* Changes to existing itertools:
+    * :func:`ilen` was optimized a bit (thanks to MSeifert04, achampion, and  bmintz)
+    * :func:`first_true` now returns ``None`` by default. This is the reason for the major version bump - see below. (thanks to sk and OJFord)
+
+* Other changes:
+   * Some code for old Python versions was removed (thanks to hugovk)
+   * Some documentation mistakes were corrected  (thanks to belm0 and hugovk)
+   * Tests now run properly on 32-bit versions of Python (thanks to Millak)
+   * Newer versions of CPython and PyPy are now tested against
+
+The major version update is due to the change in the default return value of
+:func:`first_true`. It's now ``None``.
+
+.. code-block:: python
+
+    >>> from more_itertools import first_true
+    >>> iterable = [0, '', False, [], ()]  # All these are False
+    >>> answer = first_true(iterable)
+    >>> print(answer)
+    None
+
+4.3.0
+-----
+
+* New itertools:
+    * :func:`last` (thanks to tmshn)
+    * :func:`replace` (thanks to pylang)
+    * :func:`rlocate` (thanks to jferard and pylang)
+
+* Improvements to existing itertools:
+    * :func:`locate` can now search for multiple items
+
+* Other changes:
+   * The docs now include a nice table of tools (thanks MSeifert04)
 
 4.2.0
 -----

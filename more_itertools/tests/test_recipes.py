@@ -1,8 +1,8 @@
+import warnings
 from doctest import DocTestSuite
 from unittest import TestCase
 
 from itertools import combinations
-from six.moves import range
 
 import more_itertools as mi
 
@@ -11,29 +11,6 @@ def load_tests(loader, tests, ignore):
     # Add the doctests
     tests.addTests(DocTestSuite('more_itertools.recipes'))
     return tests
-
-
-class AccumulateTests(TestCase):
-    """Tests for ``accumulate()``"""
-
-    def test_empty(self):
-        """Test that an empty input returns an empty output"""
-        self.assertEqual(list(mi.accumulate([])), [])
-
-    def test_default(self):
-        """Test accumulate with the default function (addition)"""
-        self.assertEqual(list(mi.accumulate([1, 2, 3])), [1, 3, 6])
-
-    def test_bogus_function(self):
-        """Test accumulate with an invalid function"""
-        with self.assertRaises(TypeError):
-            list(mi.accumulate([1, 2, 3], func=lambda x: x))
-
-    def test_custom_function(self):
-        """Test accumulate with a custom function"""
-        self.assertEqual(
-            list(mi.accumulate((1, 2, 3, 2, 1), func=max)), [1, 2, 3, 3, 3]
-        )
 
 
 class TakeTests(TestCase):
@@ -82,7 +59,7 @@ class TailTests(TestCase):
     """Tests for ``tail()``"""
 
     def test_greater(self):
-        """Length of iterable is greather than requested tail"""
+        """Length of iterable is greater than requested tail"""
         self.assertEqual(list(mi.tail(3, 'ABCDEFG')), ['E', 'F', 'G'])
 
     def test_equal(self):
@@ -289,7 +266,7 @@ class GrouperTests(TestCase):
 
         """
         self.assertEqual(
-            list(mi.grouper(3, 'ABCDEF')), [('A', 'B', 'C'), ('D', 'E', 'F')]
+            list(mi.grouper('ABCDEF', 3)), [('A', 'B', 'C'), ('D', 'E', 'F')]
         )
 
     def test_odd(self):
@@ -298,15 +275,27 @@ class GrouperTests(TestCase):
 
         """
         self.assertEqual(
-            list(mi.grouper(3, 'ABCDE')), [('A', 'B', 'C'), ('D', 'E', None)]
+            list(mi.grouper('ABCDE', 3)), [('A', 'B', 'C'), ('D', 'E', None)]
         )
 
     def test_fill_value(self):
         """Test that the fill value is used to pad the final group"""
         self.assertEqual(
-            list(mi.grouper(3, 'ABCDE', 'x')),
+            list(mi.grouper('ABCDE', 3, 'x')),
             [('A', 'B', 'C'), ('D', 'E', 'x')]
         )
+
+    def test_legacy_order(self):
+        """Historically, grouper expected the n as the first parameter"""
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter('always')
+            self.assertEqual(
+                list(mi.grouper(3, 'ABCDEF')),
+                [('A', 'B', 'C'), ('D', 'E', 'F')],
+            )
+
+        warning, = caught
+        assert warning.category == DeprecationWarning
 
 
 class RoundrobinTests(TestCase):
@@ -436,7 +425,7 @@ class FirstTrueTests(TestCase):
 
     def test_nothing_true(self):
         """Test default return value."""
-        self.assertEqual(mi.first_true([0, 0, 0]), False)
+        self.assertIsNone(mi.first_true([0, 0, 0]))
 
     def test_default(self):
         """Test with a default keyword"""
@@ -534,7 +523,7 @@ class RandomPermutationTests(TestCase):
 class RandomCombinationTests(TestCase):
     """Tests for ``random_combination()``"""
 
-    def test_psuedorandomness(self):
+    def test_pseudorandomness(self):
         """ensure different subsets of the iterable get returned over many
         samplings of random combinations"""
         items = range(15)
@@ -589,6 +578,15 @@ class NthCombinationTests(TestCase):
         actual = mi.nth_combination(range(180), 4, 2000000)
         expected = (2, 12, 35, 126)
         self.assertEqual(actual, expected)
+
+    def test_invalid_r(self):
+        for r in (-1, 3):
+            with self.assertRaises(ValueError):
+                mi.nth_combination([], r, 0)
+
+    def test_invalid_index(self):
+        with self.assertRaises(IndexError):
+            mi.nth_combination('abcdefg', 3, -36)
 
 
 class PrependTests(TestCase):
