@@ -3,20 +3,10 @@ Section: python
 Priority: optional
 Maintainer: Debian Python Modules Team <python-modules-team@lists.alioth.debian.org>
 Uploaders: Ethan Ward <ethan.ward@mycroft.ai>
-Build-Depends: debhelper-compat (= 11),
+Build-Depends: debhelper (>=11),
                dh-python,
-               pypy,
-               pypy-setuptools,
-               pypy-six (<< 2.0.0),
-               pypy-six (>= 1.0.0),
-               python-all,
-               python-setuptools,
-               python-six (<< 2.0.0),
-               python-six (>= 1.0.0),
                python3-all,
                python3-setuptools,
-               python3-six (<< 2.0.0),
-               python3-six (>= 1.0.0),
 Standards-Version: 4.1.4
 Homepage: https://pypi.python.org/pypi/more-itertools/
 Vcs-Git: https://salsa.debian.org/python-team/modules/more-itertools.git
