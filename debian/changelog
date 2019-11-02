@@ -1,9 +1,9 @@
-more-itertools (4.2.0-2) UNRELEASED; urgency=medium
+more-itertools (7.2.0-1~ubuntu1) bionic; urgency=medium
 
-  * Convert git repository from git-dpm to gbp layout
-  * Use debhelper-compat instead of debian/compat.
+  [ Guillaume J Humbert ]
+  * New upstream version 7.2.0
 
- -- Ondřej Nový <onovy@debian.org>  Wed, 08 Aug 2018 09:19:35 +0200
+ -- Guillaume J Humbert <guillaume.j.humbert@pm.me>  Sat, 02 Nov 2019 19:44:41 +0800
 
 more-itertools (4.2.0-1) unstable; urgency=medium
 
